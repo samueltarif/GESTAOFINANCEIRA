@@ -53,6 +53,60 @@ if (!isValidId) {
 const isTransactionModalOpen = ref(false)
 const isAccountModalOpen = ref(false)
 const isCategoryModalOpen = ref(false)
+const showManageAccountsModal = ref(false)
+const showManageCategoriesModal = ref(false)
+const showEditAccountModal = ref(false)
+const showEditCategoryModal = ref(false)
+const selectedAccount = ref<any>(null)
+const selectedCategory = ref<any>(null)
+
+// Buscar contas e categorias
+const { data: accounts, refresh: refreshAccounts } = await useFetch('/api/accounts')
+const { data: categories, refresh: refreshCategories } = await useFetch(`/api/categories`, {
+  query: { workspace_id: workspaceId }
+})
+
+const editAccount = (account: any) => {
+  selectedAccount.value = account
+  showManageAccountsModal.value = false
+  // Abrir modal de edição
+  nextTick(() => {
+    const editModal = document.getElementById('edit-account-modal')
+    if (editModal) editModal.click()
+  })
+}
+
+const editCategory = (category: any) => {
+  selectedCategory.value = category
+  showManageCategoriesModal.value = false
+  // Abrir modal de edição
+  nextTick(() => {
+    const editModal = document.getElementById('edit-category-modal')
+    if (editModal) editModal.click()
+  })
+}
+
+const handleAccountSuccess = () => {
+  refreshAccounts()
+  refresh()
+}
+
+const handleCategorySuccess = () => {
+  refreshCategories()
+  refresh()
+}
+const showManageAccountsModal = ref(false)
+const showManageCategoriesModal = ref(false)
+const selectedAccount = ref<any>(null)
+const selectedCategory = ref<any>(null)
+const showEditAccountModal = ref(false)
+const showEditCategoryModal = ref(false)
+
+// Buscar contas e categorias
+const { data: accounts, refresh: refreshAccounts } = await useFetch('/api/accounts')
+const { data: categories, refresh: refreshCategories } = await useFetch(`/api/categories`, {
+  query: { workspace_id: workspaceId }
+})
 
 // Fazer as requisições apenas se o ID for válido
 const { data: workspace, pending: workspaceLoading } = await useFetch<Workspace>(`/api/workspaces/${workspaceId}`, {
@@ -104,6 +158,28 @@ const barChartData = computed(() => {
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+}
+
+const editAccount = (account: any) => {
+  selectedAccount.value = account
+  showManageAccountsModal.value = false
+  showEditAccountModal.value = true
+}
+
+const editCategory = (category: any) => {
+  selectedCategory.value = category
+  showManageCategoriesModal.value = false
+  showEditCategoryModal.value = true
+}
+
+const handleAccountSuccess = () => {
+  refreshAccounts()
+  refresh()
+}
+
+const handleCategorySuccess = () => {
+  refreshCategories()
+  refresh()
 }
 </script>
 
@@ -166,6 +242,18 @@ function formatCurrency(value: number) {
             </div>
           </div>
           <div class="flex gap-2 flex-wrap">
+            <button 
+              @click="showManageAccountsModal = true"
+              class="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              ⚙️ Gerenciar Contas
+            </button>
+            <button 
+              @click="showManageCategoriesModal = true"
+              class="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors"
+            >
+              ⚙️ Gerenciar Categorias
+            </button>
             <button 
               @click="isAccountModalOpen = true"
               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -302,6 +390,114 @@ function formatCurrency(value: number) {
           :workspace-id="workspaceId"
           @update:open="isAccountModalOpen = $event"
           @success="refresh"
+        />
+
+        <!-- Modal de Gerenciar Contas -->
+        <div v-if="showManageAccountsModal" class="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div class="fixed inset-0 bg-black/80" @click="showManageAccountsModal = false"></div>
+          <div class="relative w-full max-w-2xl mx-4 bg-white rounded-xl shadow-2xl" style="z-index: 9999;">
+            <div class="border-b border-gray-200 px-6 py-4">
+              <h2 class="text-xl font-semibold text-gray-900">Gerenciar Contas</h2>
+              <p class="text-sm text-gray-600 mt-1">Contas são globais e afetam todos os workspaces</p>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+              <div v-if="accounts && accounts.length > 0" class="space-y-3">
+                <div
+                  v-for="account in accounts"
+                  :key="account.id"
+                  class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div>
+                    <h3 class="font-medium text-gray-900">{{ account.name }}</h3>
+                    <p class="text-sm" :class="account.balance >= 0 ? 'text-green-600' : 'text-red-600'">
+                      Saldo: R$ {{ account.balance.toFixed(2) }}
+                    </p>
+                  </div>
+                  <button
+                    @click="editAccount(account)"
+                    class="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
+                  >
+                    ✏️ Editar
+                  </button>
+                </div>
+              </div>
+              <div v-else class="text-center py-12">
+                <p class="text-gray-500">Nenhuma conta cadastrada</p>
+              </div>
+            </div>
+            <div class="border-t border-gray-200 px-6 py-4 flex justify-end">
+              <button
+                @click="showManageAccountsModal = false"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal de Gerenciar Categorias -->
+        <div v-if="showManageCategoriesModal" class="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div class="fixed inset-0 bg-black/80" @click="showManageCategoriesModal = false"></div>
+          <div class="relative w-full max-w-2xl mx-4 bg-white rounded-xl shadow-2xl" style="z-index: 9999;">
+            <div class="border-b border-gray-200 px-6 py-4">
+              <h2 class="text-xl font-semibold text-gray-900">Gerenciar Categorias</h2>
+              <p class="text-sm text-gray-600 mt-1">Categorias deste workspace</p>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+              <div v-if="categories && categories.length > 0" class="space-y-3">
+                <div
+                  v-for="category in categories"
+                  :key="category.id"
+                  class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-8 h-8 rounded-full"
+                      :style="{ backgroundColor: category.color }"
+                    ></div>
+                    <div>
+                      <h3 class="font-medium text-gray-900">{{ category.name }}</h3>
+                      <p class="text-sm text-gray-600">
+                        {{ category.type === 'revenue' ? '💰 Receita' : '💸 Despesa' }}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    @click="editCategory(category)"
+                    class="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-100 rounded-lg hover:bg-purple-200 transition-colors"
+                  >
+                    ✏️ Editar
+                  </button>
+                </div>
+              </div>
+              <div v-else class="text-center py-12">
+                <p class="text-gray-500">Nenhuma categoria cadastrada neste workspace</p>
+              </div>
+            </div>
+            <div class="border-t border-gray-200 px-6 py-4 flex justify-end">
+              <button
+                @click="showManageCategoriesModal = false"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modais de Edição -->
+        <UiEditAccountModal
+          v-model:open="showEditAccountModal"
+          :account="selectedAccount"
+          @success="handleAccountSuccess"
+        />
+
+        <UiEditCategoryModal
+          v-model:open="showEditCategoryModal"
+          :category="selectedCategory"
+          :workspace-id="workspaceId"
+          @success="handleCategorySuccess"
         />
       </template>
 
