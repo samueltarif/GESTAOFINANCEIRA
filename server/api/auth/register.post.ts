@@ -1,25 +1,14 @@
-import { createClient } from '@supabase/supabase-js'
+import { serverSupabaseClient } from '#supabase/server'
 
 /**
- * 🔧 API para registro de novos usuários com auto-confirmação
+ * 📧 API para registro de novos usuários com confirmação por email
  * 
- * Esta API cria novos usuários e os confirma automaticamente
- * para evitar problemas de confirmação de email
+ * Esta API cria novos usuários e envia email de confirmação
  */
-
-const SUPABASE_URL = process.env.SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-// Cliente admin com permissões especiais
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-    auth: {
-        autoRefreshToken: false,
-        persistSession: false
-    }
-})
 
 export default defineEventHandler(async (event) => {
     try {
+        const supabase = await serverSupabaseClient(event)
         const body = await readBody(event)
         
         if (!body.email || !body.password) {
@@ -46,23 +35,25 @@ export default defineEventHandler(async (event) => {
             })
         }
 
+        console.log('📧 Criando usuário com confirmação de email:', body.email)
 
-
-        // Criar usuário já confirmado
-        const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        // Criar usuário com confirmação de email
+        const { data, error } = await supabase.auth.signUp({
             email: body.email,
             password: body.password,
-            email_confirmed_at: new Date().toISOString(), // Confirmar automaticamente
-            user_metadata: {
-                created_via: 'auto_register_api',
-                created_at: new Date().toISOString()
+            options: {
+                emailRedirectTo: `${process.env.PUBLIC_SITE_URL || 'https://organizacaofinanceira-gamma.vercel.app'}/login`,
+                data: {
+                    created_via: 'register_api',
+                    created_at: new Date().toISOString()
+                }
             }
         })
 
         if (error) {
             console.error('❌ Erro ao criar usuário:', error)
             
-            if (error.message.includes('already registered')) {
+            if (error.message.includes('already registered') || error.message.includes('User already registered')) {
                 throw createError({ 
                     statusCode: 409, 
                     statusMessage: 'Este email já está cadastrado' 
@@ -75,31 +66,15 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-
-
-        // Criar entrada na tabela users (se necessário)
-        try {
-            const { error: insertError } = await supabaseAdmin
-                .from('users')
-                .insert({
-                    id: data.user.sub,
-                    email: data.user.email
-                })
-
-            if (insertError && !insertError.message.includes('duplicate key')) {
-                console.error('⚠️ Erro ao criar entrada na tabela users:', insertError)
-            }
-        } catch (userTableError) {
-            console.error('⚠️ Erro na tabela users (não crítico):', userTableError)
-        }
+        console.log('✅ Usuário criado com sucesso:', data.user?.email)
 
         return { 
             success: true, 
-            message: 'Usuário criado e confirmado automaticamente',
+            message: 'Usuário criado! Verifique seu email para confirmar o cadastro.',
             user: {
-                id: data.user.sub,
-                email: data.user.email,
-                confirmed_at: data.user.email_confirmed_at
+                id: data.user?.id,
+                email: data.user?.email,
+                email_confirmed: !!data.user?.email_confirmed_at
             }
         }
 

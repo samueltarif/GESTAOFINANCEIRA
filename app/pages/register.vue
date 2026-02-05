@@ -9,6 +9,8 @@ const password = ref('')
 const loading = ref(false)
 const errorMsg = ref('')
 const debugInfo = ref('')
+const successMsg = ref('')
+const showEmailSent = ref(false)
 
 // Função de debug para mostrar informações na tela
 function addDebugInfo(message: string) {
@@ -35,7 +37,7 @@ async function handleRegister() {
   try {
     addDebugInfo(`🔧 Fazendo chamada para /api/auth/register com email: ${email.value}`)
     
-    // Usar a nova API de registro que já confirma automaticamente
+    // Usar a API de registro que envia email de confirmação
     const result = await $fetch('/api/auth/register', {
       method: 'POST',
       body: { 
@@ -46,7 +48,15 @@ async function handleRegister() {
     
     addDebugInfo(`✅ Resposta da API recebida: ${JSON.stringify(result)}`)
     
-    // Fazer login automático após registro
+    // Verificar se precisa confirmar email
+    if (result.needsEmailConfirmation) {
+      showEmailSent.value = true
+      successMsg.value = 'Cadastro realizado! Verifique seu email para confirmar o cadastro.'
+      loading.value = false
+      return
+    }
+    
+    // Se não precisa confirmar, fazer login automático
     addDebugInfo('🔧 Iniciando login automático...')
     const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({
       email: email.value,
