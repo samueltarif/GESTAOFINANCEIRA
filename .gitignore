@@ -1,0 +1,61 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Kiro settings (contains tokens)
+.kiro/
+
+# Arquivos temporários e de teste
+*.cjs
+test-*.js
+teste-*.js
+debug-*.js
+*.html
+*.sql
+RELATORIO_*.md
+PROBLEMA_*.md
+SISTEMA_*.md
+CORRECOES_*.md
+INSTRUCOES_*.md
+TESTE_*.md
+PLANO*.md
+BOTAO_*.md
+LOGOUT_*.md
+DASHBOARD_*.md
+CONTAS_*.md
+SOLUCAO_*.md
+EXECUTAR_*.md
+IMPLEMENTAR_*.md
+SITUACAO_*.md
+CONFIGURAR_*.md
+GUIA_*.md
+RESUMO_*.md
+VULNERABILIDADE_*.md
+MCP-*.md
+ANALISE_*.md
+TORNAR_*.md
+
+# APIs temporárias
+server/api/*bypass*
+server/api/debug-*
