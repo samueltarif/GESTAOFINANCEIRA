@@ -123,37 +123,79 @@ function testJavaScript() {
     <!-- Mensagem de Email Enviado -->
     <div v-if="showEmailSent" class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
       <div class="text-center">
-        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Ícone de Email -->
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+          <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
           </svg>
         </div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-3">📧 Verifique seu Email</h2>
-        <p class="text-gray-700 mb-4 font-medium">{{ successMsg }}</p>
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p class="text-sm text-blue-800 mb-2">
-            Enviamos um link de confirmação para:
+
+        <!-- Título -->
+        <h2 class="text-3xl font-bold text-gray-900 mb-3">📧 Verifique seu Email!</h2>
+        
+        <!-- Mensagem de Sucesso -->
+        <div class="bg-green-50 border-2 border-green-300 rounded-lg p-4 mb-6">
+          <p class="text-green-800 font-bold text-lg mb-2">✅ Cadastro realizado com sucesso!</p>
+          <p class="text-green-700 text-sm">
+            Enviamos um email de confirmação para:
           </p>
-          <p class="text-base font-bold text-blue-900">{{ email }}</p>
+          <p class="text-green-900 font-bold text-lg mt-2 break-all">{{ email }}</p>
         </div>
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
-          <p class="text-sm text-yellow-800 font-semibold mb-2">⚠️ Importante:</p>
-          <ul class="text-sm text-yellow-700 space-y-1 list-disc list-inside">
-            <li>Verifique sua caixa de entrada</li>
-            <li>Verifique também a pasta de SPAM</li>
-            <li>Clique no link do email para ativar sua conta</li>
-            <li>Após confirmar, você poderá fazer login</li>
+
+        <!-- Instruções Passo a Passo -->
+        <div class="text-left bg-blue-50 border-2 border-blue-300 rounded-lg p-5 mb-6">
+          <h3 class="font-bold text-blue-900 mb-3 flex items-center text-lg">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Próximos passos:
+          </h3>
+          <ol class="text-sm text-blue-800 space-y-2">
+            <li class="flex items-start">
+              <span class="font-bold mr-2">1.</span>
+              <span>Abra sua caixa de entrada de email</span>
+            </li>
+            <li class="flex items-start">
+              <span class="font-bold mr-2">2.</span>
+              <span>Procure por um email de confirmação</span>
+            </li>
+            <li class="flex items-start">
+              <span class="font-bold mr-2">3.</span>
+              <span><strong>Verifique também a pasta de SPAM/LIXO ELETRÔNICO</strong></span>
+            </li>
+            <li class="flex items-start">
+              <span class="font-bold mr-2">4.</span>
+              <span>Clique no link de confirmação no email</span>
+            </li>
+            <li class="flex items-start">
+              <span class="font-bold mr-2">5.</span>
+              <span>Após confirmar, faça login com suas credenciais</span>
+            </li>
+          </ol>
+        </div>
+
+        <!-- Aviso Importante -->
+        <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mb-6">
+          <p class="text-yellow-800 font-bold mb-2 flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            ⚠️ Não recebeu o email?
+          </p>
+          <ul class="text-sm text-yellow-700 space-y-1 text-left">
+            <li>• Aguarde alguns minutos (pode demorar até 5 minutos)</li>
+            <li>• <strong>Verifique a pasta de SPAM</strong></li>
+            <li>• Verifique se o email está correto</li>
           </ul>
         </div>
+
+        <!-- Botão -->
         <NuxtLink 
           to="/login"
-          class="inline-block w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+          class="inline-block w-full px-6 py-4 bg-green-600 text-white font-bold text-lg rounded-lg hover:bg-green-700 transition-colors shadow-lg"
         >
-          Voltar para Login
+          Ir para a Página de Login
         </NuxtLink>
-        <p class="text-xs text-gray-500 mt-4">
-          Não recebeu o email? Aguarde alguns minutos e verifique o spam.
-        </p>
       </div>
     </div>
 
