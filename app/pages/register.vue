@@ -120,7 +120,30 @@ function testJavaScript() {
       </div>
     </ClientOnly>
 
-    <div class="w-full max-w-md">
+    <!-- Mensagem de Email Enviado -->
+    <div v-if="showEmailSent" class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
+      <div class="text-center">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Verifique seu Email</h2>
+        <p class="text-gray-600 mb-6">{{ successMsg }}</p>
+        <p class="text-sm text-gray-500 mb-6">
+          Enviamos um link de confirmação para <strong>{{ email }}</strong>
+        </p>
+        <NuxtLink 
+          to="/login"
+          class="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          Voltar para Login
+        </NuxtLink>
+      </div>
+    </div>
+
+    <!-- Formulário de Registro -->
+    <div v-else class="w-full max-w-md">
       <AuthForm
         title="Criar conta"
         description="Preencha os dados abaixo para começar a controlar suas finanças."

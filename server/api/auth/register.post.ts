@@ -67,10 +67,16 @@ export default defineEventHandler(async (event) => {
         }
 
         console.log('✅ Usuário criado com sucesso:', data.user?.email)
+        
+        // Verificar se precisa confirmar email
+        const needsConfirmation = !data.user?.email_confirmed_at
 
         return { 
             success: true, 
-            message: 'Usuário criado! Verifique seu email para confirmar o cadastro.',
+            message: needsConfirmation 
+                ? 'Usuário criado! Verifique seu email para confirmar o cadastro.'
+                : 'Usuário criado com sucesso!',
+            needsEmailConfirmation: needsConfirmation,
             user: {
                 id: data.user?.id,
                 email: data.user?.email,
