@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { cn } from '@/lib/utils'
 
+console.log('🚀 BUTTON.VUE: Componente carregado')
+
 interface Props {
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
   size?: 'default' | 'sm' | 'lg' | 'icon'
@@ -40,12 +42,21 @@ const buttonClass = computed(() => {
     props.class
   )
 })
+
+function handleClick(event: Event) {
+  console.log('🚀 BUTTON.VUE: Botão base clicado!', event)
+}
+
+onMounted(() => {
+  console.log('🚀 BUTTON.VUE: Componente montado')
+})
 </script>
 
 <template>
   <button 
     :class="buttonClass"
     :disabled="disabled"
+    @click="handleClick"
     v-bind="$attrs"
   >
     <slot />

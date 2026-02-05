@@ -30,18 +30,18 @@ const trendColor = computed(() => {
 </script>
 
 <template>
-  <UiCard :class="props.class">
-    <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-      <UiCardTitle class="text-sm font-medium">{{ title }}</UiCardTitle>
+  <Card :class="props.class">
+    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle class="text-sm font-medium">{{ title }}</CardTitle>
       <div v-if="icon" class="h-4 w-4 text-muted-foreground">
         <Icon :name="icon" />
       </div>
-    </UiCardHeader>
-    <UiCardContent>
+    </CardHeader>
+    <CardContent>
       <div class="text-2xl font-bold">{{ formatValue(value) }}</div>
       <p v-if="trendValue" :class="['text-xs', trendColor]">
         {{ trendValue }}
       </p>
-    </UiCardContent>
-  </UiCard>
+    </CardContent>
+  </Card>
 </template>

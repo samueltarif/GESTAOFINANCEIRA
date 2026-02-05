@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 401, statusMessage: 'ID do usuário não encontrado' })
         }
         
-        console.log('🔍 Usando userId para accounts:', userId)
+
         
         // Buscar TODAS as contas do usuário autenticado (globais)
         const { data, error } = await client
@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 500, statusMessage: error.message })
         }
 
-        console.log(`✅ Contas globais encontradas para usuário ${user.email}: ${data?.length || 0}`)
+
         return data || []
     } catch (error: any) {
         console.error('❌ Erro na API contas globais:', error)

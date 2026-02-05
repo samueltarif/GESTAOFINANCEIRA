@@ -9,21 +9,23 @@ interface Props {
       backgroundColor: string[]
     }>
   }
-  title?: string
 }
 
 const props = defineProps<Props>()
 const canvasRef = ref<HTMLCanvasElement>()
 let chartInstance: any = null
+let Chart: any = null
 
 const initChart = async () => {
   if (!canvasRef.value || !props.data.labels.length) return
   
-  // Importação dinâmica do Chart.js
-  const { Chart, registerables } = await import('chart.js')
-  Chart.register(...registerables)
+  // Lazy load Chart.js apenas quando necessário
+  if (!Chart) {
+    const chartModule = await import('chart.js')
+    Chart = chartModule.Chart
+    Chart.register(...chartModule.registerables)
+  }
   
-  // Destruir gráfico anterior se existir
   if (chartInstance) {
     chartInstance.destroy()
   }
@@ -33,13 +35,17 @@ const initChart = async () => {
     data: props.data,
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
+      animation: false, // Desabilitar animações para melhor performance
       plugins: {
         legend: {
           position: 'bottom',
           labels: {
-            padding: 20,
-            usePointStyle: true
+            padding: 15,
+            usePointStyle: true,
+            font: {
+              size: 12
+            }
           }
         }
       }
@@ -57,14 +63,7 @@ watch(() => props.data, () => {
 </script>
 
 <template>
-  <UiCard>
-    <UiCardHeader v-if="title">
-      <UiCardTitle>{{ title }}</UiCardTitle>
-    </UiCardHeader>
-    <UiCardContent>
-      <div class="h-[300px] relative">
-        <canvas ref="canvasRef"></canvas>
-      </div>
-    </UiCardContent>
-  </UiCard>
+  <div class="w-full h-full flex items-center justify-center">
+    <canvas ref="canvasRef"></canvas>
+  </div>
 </template>

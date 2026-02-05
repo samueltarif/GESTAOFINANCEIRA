@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        console.log(`🔧 Auto-confirmando usuário: ${body.email}`)
+
 
         // Buscar o usuário pelo email
         const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers()
@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
 
         // Se já está confirmado, retornar sucesso
         if (user.email_confirmed_at) {
-            console.log(`✅ Usuário ${body.email} já estava confirmado`)
+
             return { 
                 success: true, 
                 message: 'Usuário já confirmado',
@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        console.log(`✅ Email confirmado automaticamente: ${body.email}`)
+
 
         return { 
             success: true, 

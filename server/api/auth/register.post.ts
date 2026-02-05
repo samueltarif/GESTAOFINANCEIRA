@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        console.log(`🔧 Criando usuário com auto-confirmação: ${body.email}`)
+
 
         // Criar usuário já confirmado
         const { data, error } = await supabaseAdmin.auth.admin.createUser({
@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
             })
         }
 
-        console.log(`✅ Usuário criado e confirmado automaticamente: ${body.email}`)
+
 
         // Criar entrada na tabela users (se necessário)
         try {

@@ -69,55 +69,55 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-muted/30 p-6">
+  <div class="min-h-screen bg-gray-50 p-6">
     <div class="max-w-2xl mx-auto space-y-6">
       <!-- Header da página -->
       <div class="flex items-center justify-between">
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <NuxtLink to="/workspaces" class="text-sm text-muted-foreground hover:text-primary transition-colors">
+            <NuxtLink to="/workspaces" class="text-sm text-gray-600 hover:text-green-600 transition-colors">
               &larr; Voltar para workspaces
             </NuxtLink>
           </div>
-          <h1 class="text-3xl font-bold tracking-tight">Novo Workspace</h1>
-          <p class="text-muted-foreground">Crie um novo espaço para organizar suas finanças.</p>
+          <h1 class="text-3xl font-bold tracking-tight text-gray-900">Novo Workspace</h1>
+          <p class="text-gray-600">Crie um novo espaço para organizar suas finanças.</p>
         </div>
         <div class="flex gap-2">
           <!-- Botão de Logout -->
-          <Button 
-            variant="outline" 
+          <button 
             @click="handleLogout"
-            class="text-red-600 border-red-200 hover:bg-red-50"
+            class="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
           >
             🚪 Sair
-          </Button>
+          </button>
         </div>
       </div>
 
       <!-- Formulário -->
-      <div class="bg-white rounded-xl border shadow-sm p-6">
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <!-- Nome -->
           <div class="space-y-2">
-            <UiLabel for="name">Nome do Workspace</UiLabel>
-            <UiInput
+            <label for="name" class="block text-sm font-medium text-gray-700">Nome do Workspace</label>
+            <input
               id="name"
               v-model="form.name"
+              type="text"
               placeholder="Ex: Finanças Pessoais"
               required
-              class="text-lg"
+              class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
 
           <!-- Tipo -->
           <div class="space-y-3">
-            <UiLabel>Tipo</UiLabel>
+            <label class="block text-sm font-medium text-gray-700">Tipo</label>
             <div class="grid grid-cols-3 gap-4">
               <label 
                 v-for="option in typeOptions" 
                 :key="option.value"
-                class="flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                :class="form.type === option.value ? 'border-primary bg-primary/5' : 'border-input'"
+                class="flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                :class="form.type === option.value ? 'border-green-600 bg-green-50' : 'border-gray-200'"
               >
                 <input 
                   v-model="form.type" 
@@ -125,19 +125,19 @@ const handleSubmit = async () => {
                   :value="option.value"
                   class="sr-only"
                 />
-                <Icon :name="option.icon" class="h-8 w-8 mb-2" />
-                <span class="font-medium">{{ option.label }}</span>
+                <Icon :name="option.icon" class="h-8 w-8 mb-2" :class="form.type === option.value ? 'text-green-600' : 'text-gray-600'" />
+                <span class="font-medium" :class="form.type === option.value ? 'text-green-600' : 'text-gray-900'">{{ option.label }}</span>
               </label>
             </div>
           </div>
 
           <!-- Moeda -->
           <div class="space-y-2">
-            <UiLabel for="currency">Moeda</UiLabel>
+            <label for="currency" class="block text-sm font-medium text-gray-700">Moeda</label>
             <select 
               id="currency"
               v-model="form.currency"
-              class="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="BRL">Real (BRL)</option>
               <option value="USD">Dólar (USD)</option>
@@ -147,14 +147,14 @@ const handleSubmit = async () => {
 
           <!-- Cor -->
           <div class="space-y-3">
-            <UiLabel>Cor de Identificação</UiLabel>
+            <label class="block text-sm font-medium text-gray-700">Cor de Identificação</label>
             <div class="flex gap-3 flex-wrap">
               <button
                 v-for="color in colorOptions"
                 :key="color"
                 type="button"
                 @click="form.color = color"
-                class="w-12 h-12 rounded-full border-4 transition-all hover:scale-110"
+                class="w-12 h-12 rounded-full border-4 transition-all hover:scale-110 cursor-pointer"
                 :class="form.color === color ? 'border-gray-400 scale-110' : 'border-gray-200'"
                 :style="{ backgroundColor: color }"
               />
@@ -164,21 +164,21 @@ const handleSubmit = async () => {
           <!-- Botões -->
           <div class="flex gap-4 pt-4">
             <NuxtLink to="/workspaces" class="flex-1">
-              <UiButton 
-                variant="outline" 
-                class="w-full"
+              <button 
+                type="button"
+                class="w-full px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="isSubmitting"
               >
                 Cancelar
-              </UiButton>
+              </button>
             </NuxtLink>
-            <UiButton 
+            <button 
               type="submit"
-              class="flex-1"
+              class="flex-1 px-4 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               :disabled="isSubmitting || !form.name.trim()"
             >
               {{ isSubmitting ? 'Criando...' : 'Criar Workspace' }}
-            </UiButton>
+            </button>
           </div>
         </form>
       </div>

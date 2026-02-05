@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 500, statusMessage: 'Erro ao confirmar email' })
         }
 
-        console.log(`✅ Email confirmado automaticamente: ${body.email}`)
+
         
         return { 
             message: 'Email confirmado com sucesso', 

@@ -34,7 +34,7 @@ const getTypeIcon = (type: string) => {
 </script>
 
 <template>
-  <UiCard class="hover:shadow-md transition-shadow cursor-pointer">
+  <Card class="hover:shadow-md transition-shadow cursor-pointer">
     <NuxtLink :to="`/workspaces/${workspace.id}`" class="block p-6">
       <div class="flex items-start justify-between">
         <div class="flex items-center space-x-3">
@@ -60,5 +60,5 @@ const getTypeIcon = (type: string) => {
         Criado em {{ new Date(workspace.created_at).toLocaleDateString('pt-BR') }}
       </div>
     </NuxtLink>
-  </UiCard>
+  </Card>
 </template>

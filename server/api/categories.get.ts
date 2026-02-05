@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
                 throw createError({ statusCode: 500, statusMessage: error.message })
             }
 
-            console.log(`✅ Categorias encontradas para usuário ${user.email}: ${data?.length || 0}`)
+
             return data || []
         }
     } catch (error: any) {

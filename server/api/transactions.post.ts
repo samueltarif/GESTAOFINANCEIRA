@@ -50,11 +50,9 @@ export default defineEventHandler(async (event) => {
             .single()
 
         if (error) {
-            console.error('❌ Erro ao criar transação:', error)
             throw createError({ statusCode: 500, statusMessage: error.message })
         }
 
-        console.log(`✅ Transação criada para usuário ${user.email}: ${data.description}`)
         return data
     } catch (error: any) {
         console.error('❌ Erro na API criar transação:', error)

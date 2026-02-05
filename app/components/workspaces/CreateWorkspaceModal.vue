@@ -71,95 +71,114 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <UiDialog :open="isOpen" @update:open="isOpen = $event">
-    <UiDialogContent class="sm:max-w-[425px]">
-      <UiDialogHeader>
-        <UiDialogTitle>Novo Workspace</UiDialogTitle>
-        <UiDialogDescription>
-          Crie um novo espaço para organizar suas finanças
-        </UiDialogDescription>
-      </UiDialogHeader>
+  <Teleport to="body">
+    <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center">
+      <!-- Overlay -->
+      <div 
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        @click="isOpen = false"
+      ></div>
       
-      <form @submit.prevent="handleSubmit" class="space-y-4 p-6">
-        <!-- Nome -->
-        <div class="space-y-2">
-          <UiLabel for="name">Nome do Workspace</UiLabel>
-          <UiInput
-            id="name"
-            v-model="form.name"
-            placeholder="Ex: Finanças Pessoais"
-            required
-          />
+      <!-- Modal -->
+      <div class="relative z-50 w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl">
+        <!-- Header -->
+        <div class="border-b border-gray-200 px-6 py-4">
+          <h2 class="text-xl font-semibold text-gray-900">Novo Workspace</h2>
+          <p class="text-sm text-gray-600 mt-1">Crie um novo espaço para organizar suas finanças</p>
         </div>
-
-        <!-- Tipo -->
-        <div class="space-y-2">
-          <UiLabel>Tipo</UiLabel>
-          <div class="grid grid-cols-3 gap-2">
-            <label 
-              v-for="option in typeOptions" 
-              :key="option.value"
-              class="flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              :class="form.type === option.value ? 'border-primary bg-primary/5' : 'border-input'"
-            >
-              <input 
-                v-model="form.type" 
-                type="radio" 
-                :value="option.value"
-                class="sr-only"
-              />
-              <Icon :name="option.icon" class="h-5 w-5 mb-1" />
-              <span class="text-xs">{{ option.label }}</span>
+        
+        <!-- Form -->
+        <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
+          <!-- Nome -->
+          <div class="space-y-2">
+            <label for="name" class="block text-sm font-medium text-gray-700">
+              Nome do Workspace
             </label>
-          </div>
-        </div>
-
-        <!-- Moeda -->
-        <div class="space-y-2">
-          <UiLabel for="currency">Moeda</UiLabel>
-          <select 
-            id="currency"
-            v-model="form.currency"
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <option value="BRL">Real (BRL)</option>
-            <option value="USD">Dólar (USD)</option>
-            <option value="EUR">Euro (EUR)</option>
-          </select>
-        </div>
-
-        <!-- Cor -->
-        <div class="space-y-2">
-          <UiLabel>Cor</UiLabel>
-          <div class="flex gap-2 flex-wrap">
-            <button
-              v-for="color in colorOptions"
-              :key="color"
-              type="button"
-              @click="form.color = color"
-              class="w-8 h-8 rounded-full border-2 transition-all"
-              :class="form.color === color ? 'border-gray-400 scale-110' : 'border-gray-200'"
-              :style="{ backgroundColor: color }"
+            <input
+              id="name"
+              v-model="form.name"
+              type="text"
+              placeholder="Ex: Finanças Pessoais"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
-        </div>
-      </form>
 
-      <UiDialogFooter>
-        <UiButton 
-          variant="outline" 
-          @click="isOpen = false"
-          :disabled="isSubmitting"
-        >
-          Cancelar
-        </UiButton>
-        <UiButton 
-          @click="handleSubmit"
-          :disabled="isSubmitting || !form.name.trim()"
-        >
-          {{ isSubmitting ? 'Criando...' : 'Criar Workspace' }}
-        </UiButton>
-      </UiDialogFooter>
-    </UiDialogContent>
-  </UiDialog>
+          <!-- Tipo -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">Tipo</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label 
+                v-for="option in typeOptions" 
+                :key="option.value"
+                class="flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                :class="form.type === option.value ? 'border-green-500 bg-green-50' : 'border-gray-300'"
+              >
+                <input 
+                  v-model="form.type" 
+                  type="radio" 
+                  :value="option.value"
+                  class="sr-only"
+                />
+                <Icon :name="option.icon" class="h-5 w-5 mb-1" />
+                <span class="text-xs">{{ option.label }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Moeda -->
+          <div class="space-y-2">
+            <label for="currency" class="block text-sm font-medium text-gray-700">
+              Moeda
+            </label>
+            <select 
+              id="currency"
+              v-model="form.currency"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="BRL">Real (BRL)</option>
+              <option value="USD">Dólar (USD)</option>
+              <option value="EUR">Euro (EUR)</option>
+            </select>
+          </div>
+
+          <!-- Cor -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">Cor</label>
+            <div class="flex gap-2 flex-wrap">
+              <button
+                v-for="color in colorOptions"
+                :key="color"
+                type="button"
+                @click="form.color = color"
+                class="w-8 h-8 rounded-full border-2 transition-all hover:scale-110"
+                :class="form.color === color ? 'border-gray-900 scale-110' : 'border-gray-300'"
+                :style="{ backgroundColor: color }"
+              />
+            </div>
+          </div>
+        </form>
+
+        <!-- Footer -->
+        <div class="border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+          <button
+            type="button"
+            @click="isOpen = false"
+            :disabled="isSubmitting"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            @click="handleSubmit"
+            :disabled="isSubmitting || !form.name.trim()"
+            class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ isSubmitting ? 'Criando...' : 'Criar Workspace' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>

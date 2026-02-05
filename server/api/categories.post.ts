@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 500, statusMessage: error.message })
         }
 
-        console.log(`✅ Categoria criada para usuário ${user.email}: ${data.name}`)
+
         return data
     } catch (error: any) {
         console.error('❌ Erro na API criar categoria:', error)

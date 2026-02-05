@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 500, statusMessage: error.message })
         }
 
-        console.log(`✅ Workspace criado para usuário ${user.email}: ${data.name}`)
+
         return data
     } catch (error: any) {
         console.error('❌ Erro na API criar workspace:', error)

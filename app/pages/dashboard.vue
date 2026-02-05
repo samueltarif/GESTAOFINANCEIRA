@@ -6,7 +6,7 @@ definePageMeta({
 })
 
 const user = useSupabaseUser()
-const { data: dashboardData, pending } = await useFetch('/api/dashboard/global')
+const { data: dashboardData, pending, refresh } = await useFetch('/api/dashboard/global')
 
 const pieChartData = computed(() => ({
   labels: dashboardData.value?.expensesByCategory.labels || [],
@@ -31,79 +31,210 @@ const barChartData = computed(() => ({
     }
   ]
 }))
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-muted/30">
-    <!-- Header simples com logout -->
-    <header class="bg-white border-b border-gray-200 shadow-sm">
-      <div class="max-w-7xl mx-auto px-6 py-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-bold text-primary">💰 Controle Financeiro</h1>
-          </div>
-          
-          <div class="flex items-center gap-4">
-            <!-- User Info -->
-            <div class="flex items-center gap-2 text-sm">
-              <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                <span class="text-primary font-medium">
-                  {{ user?.email?.charAt(0).toUpperCase() }}
-                </span>
-              </div>
-              <span class="text-gray-600">{{ user?.email }}</span>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
+      <div class="max-w-7xl mx-auto flex h-16 items-center justify-between px-4">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">💰</span>
+          <h1 class="text-xl font-bold text-gray-900">Controle Financeiro</h1>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-green-100">
+              <span class="text-sm font-medium text-green-700">
+                {{ user?.email?.charAt(0).toUpperCase() }}
+              </span>
             </div>
-            
-            <!-- Logout Button -->
-            <LogoutButton />
+            <span class="text-sm text-gray-600 hidden sm:inline">{{ user?.email }}</span>
           </div>
+          <LogoutButton />
         </div>
       </div>
     </header>
     
-    <div class="p-6">
-      <div class="max-w-7xl mx-auto space-y-6">
-        <!-- Header da página -->
-        <div class="flex items-center justify-between">
-          <h1 class="text-3xl font-bold">Dashboard Global</h1>
-          <div class="flex gap-2">
-            <NuxtLink to="/workspaces">
-              <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                Ver Workspaces
-              </button>
-            </NuxtLink>
-            <NuxtLink to="/workspaces/new">
-              <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md hover:bg-primary/90">
-                + Novo Workspace
-              </button>
-            </NuxtLink>
-          </div>
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <!-- Page Header -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-gray-900">Dashboard Global</h2>
+          <p class="text-gray-600">Visão geral das suas finanças</p>
         </div>
-
-        <!-- Loading -->
-        <div v-if="pending" class="flex items-center justify-center py-12">
-          <div class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <div class="flex gap-2">
+          <NuxtLink to="/workspaces">
+            <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              Ver Workspaces
+            </button>
+          </NuxtLink>
+          <NuxtLink to="/workspaces/new">
+            <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-colors">
+              + Novo Workspace
+            </button>
+          </NuxtLink>
         </div>
-
-        <template v-else-if="dashboardData">
-          <!-- KPIs -->
-          <GlobalBalanceSummary
-            :total-balance="dashboardData.totalBalance"
-            :total-revenue="dashboardData.totalRevenue"
-            :total-expenses="dashboardData.totalExpenses"
-            :profit="dashboardData.profit"
-          />
-
-          <!-- Gráficos -->
-          <div class="grid gap-6 lg:grid-cols-2">
-            <GlobalPieExpenses :data="pieChartData" />
-            <GlobalBarMonthly :data="barChartData" />
-          </div>
-
-          <!-- Transações Recentes -->
-          <RecentTransactionsTable :transactions="dashboardData.recentTransactions" />
-        </template>
       </div>
-    </div>
+
+      <!-- Loading State -->
+      <div v-if="pending" class="flex items-center justify-center py-12">
+        <div class="flex flex-col items-center gap-2">
+          <div class="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+          <p class="text-sm text-gray-600">Carregando dados...</p>
+        </div>
+      </div>
+
+      <!-- Dashboard Content -->
+      <template v-else-if="dashboardData">
+        <!-- KPI Cards -->
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <!-- Saldo Total -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-medium text-gray-600">Saldo Total</h3>
+              <Icon name="lucide:wallet" class="h-4 w-4 text-gray-400" />
+            </div>
+            <div class="text-2xl font-bold text-gray-900">{{ formatCurrency(dashboardData.totalBalance) }}</div>
+            <p class="text-xs text-gray-500 mt-1">Saldo atual em todas as contas</p>
+          </div>
+
+          <!-- Total de Receitas -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-medium text-gray-600">Total de Receitas</h3>
+              <Icon name="lucide:trending-up" class="h-4 w-4 text-gray-400" />
+            </div>
+            <div class="text-2xl font-bold text-green-600">{{ formatCurrency(dashboardData.totalRevenue) }}</div>
+            <p class="text-xs text-gray-500 mt-1">Receitas acumuladas</p>
+          </div>
+
+          <!-- Total de Despesas -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-medium text-gray-600">Total de Despesas</h3>
+              <Icon name="lucide:trending-down" class="h-4 w-4 text-gray-400" />
+            </div>
+            <div class="text-2xl font-bold text-red-600">{{ formatCurrency(dashboardData.totalExpenses) }}</div>
+            <p class="text-xs text-gray-500 mt-1">Despesas acumuladas</p>
+          </div>
+
+          <!-- Lucro / Sobra -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-medium text-gray-600">Lucro / Sobra</h3>
+              <Icon name="lucide:piggy-bank" class="h-4 w-4 text-gray-400" />
+            </div>
+            <div class="text-2xl font-bold" :class="dashboardData.profit >= 0 ? 'text-green-600' : 'text-red-600'">
+              {{ formatCurrency(dashboardData.profit) }}
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Saldo + Receitas - Despesas</p>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid gap-6 lg:grid-cols-2">
+          <!-- Pie Chart -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Gastos por Categoria</h3>
+              <p class="text-sm text-gray-600">Distribuição das suas despesas</p>
+            </div>
+            <div class="h-[300px]">
+              <ClientOnly>
+                <ChartsPieChart :data="pieChartData" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Bar Chart -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Evolução Mensal</h3>
+              <p class="text-sm text-gray-600">Receitas e despesas ao longo do tempo</p>
+            </div>
+            <div class="h-[300px]">
+              <ClientOnly>
+                <ChartsBarChart :data="barChartData" />
+              </ClientOnly>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Transações Recentes</h3>
+            <p class="text-sm text-gray-600">Últimas movimentações financeiras ({{ dashboardData.recentTransactions?.length || 0 }} transações)</p>
+          </div>
+          
+          <!-- Debug: mostrar dados brutos -->
+          <div v-if="dashboardData.recentTransactions && dashboardData.recentTransactions.length > 0" class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Data</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Descrição</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Categoria</th>
+                  <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tipo</th>
+                  <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Valor</th>
+                  <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Impacto no Lucro</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="tx in dashboardData.recentTransactions" 
+                  :key="tx.id"
+                  class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <td class="py-3 px-4 text-sm text-gray-700">{{ tx.date }}</td>
+                  <td class="py-3 px-4 text-sm text-gray-900 font-medium">{{ tx.description || '-' }}</td>
+                  <td class="py-3 px-4 text-sm text-gray-600">{{ tx.category }}</td>
+                  <td class="py-3 px-4">
+                    <span 
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      :class="tx.type === 'revenue' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'"
+                    >
+                      {{ tx.type === 'revenue' ? 'Receita' : 'Despesa' }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-right text-sm font-semibold" :class="tx.type === 'revenue' ? 'text-green-600' : 'text-red-600'">
+                    R$ {{ tx.amount.toFixed(2) }}
+                  </td>
+                  <td class="py-3 px-4 text-right text-sm font-bold" :class="tx.type === 'revenue' ? 'text-green-600' : 'text-red-600'">
+                    {{ tx.type === 'revenue' ? '+' : '-' }} R$ {{ tx.amount.toFixed(2) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div v-else class="text-center py-12">
+            <div class="flex flex-col items-center gap-2">
+              <Icon name="lucide:inbox" class="h-12 w-12 text-gray-300" />
+              <p class="text-gray-500 text-sm">Nenhuma transação encontrada</p>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Empty State -->
+      <div v-else class="rounded-lg border border-gray-200 bg-white p-12 shadow-sm text-center">
+        <Icon name="lucide:inbox" class="h-12 w-12 text-gray-300 mx-auto mb-4" />
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Nenhum dado disponível</h3>
+        <p class="text-sm text-gray-600 mb-4">Comece criando um workspace e adicionando transações</p>
+        <NuxtLink to="/workspaces/new">
+          <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-colors">
+            Criar Primeiro Workspace
+          </button>
+        </NuxtLink>
+      </div>
+    </main>
   </div>
 </template>

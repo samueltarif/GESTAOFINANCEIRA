@@ -21,7 +21,7 @@ const formattedValue = computed({
 <template>
   <div class="relative">
     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">R$</span>
-    <UiInput 
+    <Input 
       v-model="formattedValue" 
       class="pl-10 text-xl font-bold" 
       placeholder="0,00"

@@ -59,14 +59,19 @@ export default defineEventHandler(async (event) => {
 
         const categoryMap = new Map(categories?.map(c => [c.id, c]) || [])
 
-        // Buscar transações através das contas globais
+        // Buscar transações através das contas globais (apenas campos necessários)
         let transactions: any[] = []
         if (accountIds.length > 0) {
-            const { data: txs } = await client
+            const { data: txs, error: txError } = await client
                 .from('transactions')
-                .select('*')
+                .select('id, date, description, category_id, account_id, type, amount')
                 .in('account_id', accountIds)
                 .order('date', { ascending: false })
+                .limit(100) // Limitar para melhor performance
+
+            if (txError) {
+                console.error('Erro ao buscar transações:', txError)
+            }
 
             transactions = txs || []
         }
@@ -90,7 +95,8 @@ export default defineEventHandler(async (event) => {
             }
         })
 
-        const profit = totalRevenue - totalExpenses
+        // CORREÇÃO: Lucro/Sobra = Saldo Total + Receitas - Despesas
+        const profit = totalBalance + totalRevenue - totalExpenses
 
         // Preparar dados para o gráfico de pizza
         const expenseLabels: string[] = []
@@ -138,6 +144,8 @@ export default defineEventHandler(async (event) => {
                 date: tx.date,
                 description: tx.description || '',
                 category: categoryMap.get(tx.category_id)?.name || 'Sem categoria',
+                category_id: tx.category_id,
+                account_id: tx.account_id,
                 type: tx.type,
                 amount: tx.amount
             }))

@@ -82,7 +82,8 @@ export default defineEventHandler(async (event) => {
             }
         })
 
-        const profit = totalRevenue - totalExpenses
+        // CORREÇÃO: Lucro/Sobra = Saldo Total + Receitas - Despesas
+        const profit = totalBalance + totalRevenue - totalExpenses
 
         // Preparar dados para o gráfico de pizza
         const expenseLabels: string[] = []
@@ -118,7 +119,7 @@ export default defineEventHandler(async (event) => {
             monthlyExpenses.push(exp)
         }
 
-        return {
+        const result = {
             totalBalance,
             totalRevenue,
             totalExpenses,
@@ -142,6 +143,8 @@ export default defineEventHandler(async (event) => {
                 amount: tx.amount
             }))
         }
+        
+        return result
     } catch (error: any) {
         console.error('❌ Erro na API dashboard:', error)
         if (error.statusCode) {

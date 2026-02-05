@@ -10,11 +10,11 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 401, statusMessage: 'Usuário não autenticado' })
         }
 
-        console.log('🔍 === DEBUG WORKSPACES API ===')
-        console.log('User object:', user)
-        console.log('User ID:', user?.id)
-        console.log('User sub:', user?.sub)
-        console.log('User email:', user?.email)
+
+
+
+
+
 
         // CORREÇÃO: Usar user.sub ou user.sub como fallback
         const userId = user.sub || user.sub
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 401, statusMessage: 'ID do usuário não encontrado' })
         }
         
-        console.log('🔍 Usando userId:', userId)
+
 
         const { data, error } = await client
             .from('workspaces')
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 500, statusMessage: error.message })
         }
 
-        console.log(`✅ Workspaces encontrados: ${data?.length || 0}`)
+
         return data || []
     } catch (error: any) {
         console.error('❌ Erro na API workspaces:', error)
