@@ -128,17 +128,32 @@ function testJavaScript() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
           </svg>
         </div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Verifique seu Email</h2>
-        <p class="text-gray-600 mb-6">{{ successMsg }}</p>
-        <p class="text-sm text-gray-500 mb-6">
-          Enviamos um link de confirmação para <strong>{{ email }}</strong>
-        </p>
+        <h2 class="text-2xl font-bold text-gray-900 mb-3">📧 Verifique seu Email</h2>
+        <p class="text-gray-700 mb-4 font-medium">{{ successMsg }}</p>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p class="text-sm text-blue-800 mb-2">
+            Enviamos um link de confirmação para:
+          </p>
+          <p class="text-base font-bold text-blue-900">{{ email }}</p>
+        </div>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+          <p class="text-sm text-yellow-800 font-semibold mb-2">⚠️ Importante:</p>
+          <ul class="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+            <li>Verifique sua caixa de entrada</li>
+            <li>Verifique também a pasta de SPAM</li>
+            <li>Clique no link do email para ativar sua conta</li>
+            <li>Após confirmar, você poderá fazer login</li>
+          </ul>
+        </div>
         <NuxtLink 
           to="/login"
-          class="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          class="inline-block w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
         >
           Voltar para Login
         </NuxtLink>
+        <p class="text-xs text-gray-500 mt-4">
+          Não recebeu o email? Aguarde alguns minutos e verifique o spam.
+        </p>
       </div>
     </div>
 
