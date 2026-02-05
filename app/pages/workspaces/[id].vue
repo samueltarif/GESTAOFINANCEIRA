@@ -69,21 +69,13 @@ const { data: categories, refresh: refreshCategories } = await useFetch(`/api/ca
 const editAccount = (account: any) => {
   selectedAccount.value = account
   showManageAccountsModal.value = false
-  // Abrir modal de edição
-  nextTick(() => {
-    const editModal = document.getElementById('edit-account-modal')
-    if (editModal) editModal.click()
-  })
+  showEditAccountModal.value = true
 }
 
 const editCategory = (category: any) => {
   selectedCategory.value = category
   showManageCategoriesModal.value = false
-  // Abrir modal de edição
-  nextTick(() => {
-    const editModal = document.getElementById('edit-category-modal')
-    if (editModal) editModal.click()
-  })
+  showEditCategoryModal.value = true
 }
 
 const handleAccountSuccess = () => {
@@ -95,20 +87,8 @@ const handleCategorySuccess = () => {
   refreshCategories()
   refresh()
 }
-const showManageAccountsModal = ref(false)
-const showManageCategoriesModal = ref(false)
-const selectedAccount = ref<any>(null)
-const selectedCategory = ref<any>(null)
-const showEditAccountModal = ref(false)
-const showEditCategoryModal = ref(false)
 
-// Buscar contas e categorias
-const { data: accounts, refresh: refreshAccounts } = await useFetch('/api/accounts')
-const { data: categories, refresh: refreshCategories } = await useFetch(`/api/categories`, {
-  query: { workspace_id: workspaceId }
-})
-
-// Fazer as requisições apenas se o ID for válido
+// Fazer as requisições apenas se o ID for válido// Fazer as requisições apenas se o ID for válido
 const { data: workspace, pending: workspaceLoading } = await useFetch<Workspace>(`/api/workspaces/${workspaceId}`, {
   default: () => null as any
 })

@@ -32,12 +32,37 @@ async function handleLogin() {
     })
 
     if (error) {
-      if (error.message.includes('Invalid login credentials')) {
+      // Se o erro for de email não confirmado, tenta confirmar automaticamente
+      if (error.message.includes('Email not confirmed')) {
+        try {
+          await $fetch('/api/auth/auto-confirm', {
+            method: 'POST',
+            body: { email: loginEmail.value }
+          })
+          
+          // Tenta fazer login novamente
+          const { error: retryError } = await supabase.auth.signInWithPassword({
+            email: loginEmail.value,
+            password: loginPassword.value,
+          })
+          
+          if (retryError) {
+            loginError.value = 'Email ou senha incorretos'
+            loginLoading.value = false
+          } else {
+            navigateTo('/dashboard')
+          }
+        } catch (confirmError) {
+          loginError.value = 'Erro ao confirmar email. Entre em contato com o suporte.'
+          loginLoading.value = false
+        }
+      } else if (error.message.includes('Invalid login credentials')) {
         loginError.value = 'Email ou senha incorretos'
+        loginLoading.value = false
       } else {
         loginError.value = error.message
+        loginLoading.value = false
       }
-      loginLoading.value = false
     } else {
       navigateTo('/dashboard')
     }

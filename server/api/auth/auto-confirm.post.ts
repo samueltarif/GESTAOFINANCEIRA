@@ -52,7 +52,6 @@ export default defineEventHandler(async (event) => {
 
         // Se já está confirmado, retornar sucesso
         if (user.email_confirmed_at) {
-
             return { 
                 success: true, 
                 message: 'Usuário já confirmado',
@@ -74,8 +73,6 @@ export default defineEventHandler(async (event) => {
                 statusMessage: `Erro ao confirmar email: ${error.message}` 
             })
         }
-
-
 
         return { 
             success: true, 
