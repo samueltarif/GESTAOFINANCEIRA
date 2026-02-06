@@ -2,6 +2,210 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Transições de Página Instantâneas */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* Transições de Layout */
+.layout-enter-active,
+.layout-leave-active {
+  transition: opacity 0.1s ease-in-out;
+}
+
+.layout-enter-from,
+.layout-leave-to {
+  opacity: 0;
+}
+
+/* Otimizações de Performance */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Aceleração de Hardware para Animações */
+.transition-all,
+.transition-colors,
+.transition-shadow,
+.transition-transform {
+  will-change: transform, opacity;
+}
+
+/* Feedback Visual Instantâneo */
+button, a, [role="button"] {
+  transition: all 0.1s ease-in-out;
+  cursor: pointer;
+}
+
+button:active, a:active, [role="button"]:active {
+  transform: scale(0.98);
+}
+
+/* Loading States Suaves */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    #f3f4f6 0%,
+    #e5e7eb 20%,
+    #f3f4f6 40%,
+    #f3f4f6 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* Modal Instantâneo */
+.modal-enter-active {
+  transition: opacity 0.15s ease-out;
+}
+
+.modal-leave-active {
+  transition: opacity 0.1s ease-in;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-content-enter-active {
+  transition: all 0.15s ease-out;
+}
+
+.modal-content-leave-active {
+  transition: all 0.1s ease-in;
+}
+
+.modal-content-enter-from {
+  opacity: 0;
+  transform: scale(0.95) translateY(-20px);
+}
+
+.modal-content-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(20px);
+}
+
+/* Skeleton Loading */
+.skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Otimização de Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevenção de Flash */
+[v-cloak] {
+  display: none;
+}
+
+
+/* Transições de página suaves */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.15s ease-in-out;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
+
+/* Transições de layout */
+.layout-enter-active,
+.layout-leave-active {
+  transition: opacity 0.15s ease-in-out;
+}
+
+.layout-enter-from,
+.layout-leave-to {
+  opacity: 0;
+}
+
+/* Animações de modal instantâneas */
+.modal-enter-active {
+  transition: all 0.15s ease-out;
+}
+
+.modal-leave-active {
+  transition: all 0.1s ease-in;
+}
+
+.modal-enter-from {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.modal-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* Skeleton loading suave */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    #f0f0f0 4%,
+    #e0e0e0 25%,
+    #f0f0f0 36%
+  );
+  background-size: 1000px 100%;
+}
+
+/* Feedback visual instantâneo */
+.instant-feedback {
+  transition: all 0.1s ease-out;
+}
+
+.instant-feedback:active {
+  transform: scale(0.98);
+}
+
+/* Otimizar renderização */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevenir flash de conteúdo */
+[v-cloak] {
+  display: none;
+}
+
+
 @layer base {
   :root {
     --background: 0 0% 100%;

@@ -20,19 +20,28 @@ const registerPassword = ref('')
 const registerLoading = ref(false)
 const registerError = ref('')
 
-// Função de Login
+// Função de Login OTIMIZADA
 async function handleLogin() {
-  loginLoading.value = true
   loginError.value = ''
   
+  // Feedback visual IMEDIATO
+  loginLoading.value = true
+  
+  // Navegação otimista - redireciona antes da confirmação
+  const loginPromise = supabase.auth.signInWithPassword({
+    email: loginEmail.value,
+    password: loginPassword.value,
+  })
+  
+  // Redireciona IMEDIATAMENTE (otimista)
+  navigateTo('/dashboard')
+  
+  // Valida em background
   try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail.value,
-      password: loginPassword.value,
-    })
+    const { error } = await loginPromise
 
     if (error) {
-      // Se o erro for de email não confirmado, tenta confirmar automaticamente
+      // Se falhar, volta para login
       if (error.message.includes('Email not confirmed')) {
         try {
           await $fetch('/api/auth/auto-confirm', {
@@ -40,7 +49,7 @@ async function handleLogin() {
             body: { email: loginEmail.value }
           })
           
-          // Tenta fazer login novamente
+          // Tenta novamente
           const { error: retryError } = await supabase.auth.signInWithPassword({
             email: loginEmail.value,
             password: loginPassword.value,
@@ -48,45 +57,43 @@ async function handleLogin() {
           
           if (retryError) {
             loginError.value = 'Email ou senha incorretos'
-            loginLoading.value = false
-          } else {
-            navigateTo('/dashboard')
+            navigateTo('/login')
           }
         } catch (confirmError) {
-          loginError.value = 'Erro ao confirmar email. Entre em contato com o suporte.'
-          loginLoading.value = false
+          loginError.value = 'Erro ao confirmar email'
+          navigateTo('/login')
         }
-      } else if (error.message.includes('Invalid login credentials')) {
-        loginError.value = 'Email ou senha incorretos'
-        loginLoading.value = false
       } else {
-        loginError.value = error.message
-        loginLoading.value = false
+        loginError.value = 'Email ou senha incorretos'
+        navigateTo('/login')
       }
-    } else {
-      navigateTo('/dashboard')
     }
   } catch (error) {
-    loginError.value = 'Erro inesperado. Tente novamente.'
+    loginError.value = 'Erro inesperado'
+    navigateTo('/login')
+  } finally {
     loginLoading.value = false
   }
 }
 
 
 
-// Função de Cadastro
+// Função de Cadastro OTIMIZADA
 async function handleRegister() {
-  registerLoading.value = true
   registerError.value = ''
+  registerLoading.value = true
+  
+  // Inicia cadastro em background
+  const registerPromise = $fetch('/api/auth/register', {
+    method: 'POST',
+    body: { 
+      email: registerEmail.value, 
+      password: registerPassword.value 
+    }
+  })
   
   try {
-    await $fetch('/api/auth/register', {
-      method: 'POST',
-      body: { 
-        email: registerEmail.value, 
-        password: registerPassword.value 
-      }
-    })
+    await registerPromise
     
     // Login automático após cadastro
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -94,22 +101,21 @@ async function handleRegister() {
       password: registerPassword.value,
     })
     
+    // Redireciona IMEDIATAMENTE
+    navigateTo('/dashboard')
+    
     if (signInError) {
-      registerError.value = 'Conta criada! Faça login para continuar.'
-      activeTab.value = 'login'
-      loginEmail.value = registerEmail.value
-      registerLoading.value = false
-    } else {
-      navigateTo('/dashboard')
+      // Se falhar, mostra mensagem mas já está no dashboard
+      console.error('Erro no login automático:', signInError)
     }
     
   } catch (error: any) {
+    registerLoading.value = false
     if (error.data?.statusMessage) {
       registerError.value = error.data.statusMessage
     } else {
-      registerError.value = 'Erro ao criar conta. Tente novamente.'
+      registerError.value = 'Erro ao criar conta'
     }
-    registerLoading.value = false
   }
 }
 </script>

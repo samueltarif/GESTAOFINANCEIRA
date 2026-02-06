@@ -6,7 +6,50 @@ definePageMeta({
 })
 
 const user = useSupabaseUser()
-const { data: dashboardData, pending, refresh } = await useFetch('/api/dashboard/global')
+
+// Filtro de mês (formato: YYYY-MM)
+const now = new Date()
+const selectedMonth = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+
+// Modal de criação de conta
+const isAccountModalOpen = ref(false)
+
+// Buscar dados do dashboard com lazy loading
+const { data: dashboardData, pending, refresh } = useLazyFetch('/api/dashboard/global', {
+  query: computed(() => ({ month: selectedMonth.value })),
+  server: false, // Desabilita SSR para essa chamada
+  lazy: true
+})
+
+// Gerar lista de meses (últimos 12 meses + próximos 3)
+const monthOptions = computed(() => {
+  const options = []
+  const today = new Date()
+  
+  // Últimos 12 meses (excluindo 2025)
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+    // Pular meses de 2025
+    if (d.getFullYear() === 2025) continue
+    
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    options.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) })
+  }
+  
+  // Próximos 3 meses (excluindo 2025)
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1)
+    // Pular meses de 2025
+    if (d.getFullYear() === 2025) continue
+    
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    options.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) })
+  }
+  
+  return options
+})
 
 const pieChartData = computed(() => ({
   labels: dashboardData.value?.expensesByCategory.labels || [],
@@ -69,12 +112,28 @@ function formatCurrency(value: number) {
           <h2 class="text-3xl font-bold tracking-tight text-gray-900">Dashboard Global</h2>
           <p class="text-gray-600">Visão geral das suas finanças</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
+          <!-- Filtro de Mês -->
+          <select 
+            v-model="selectedMonth"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option v-for="option in monthOptions" :key="option.value" :value="option.value">
+              📅 {{ option.label }}
+            </option>
+          </select>
+          
           <NuxtLink to="/workspaces">
             <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               Ver Workspaces
             </button>
           </NuxtLink>
+          <button 
+            @click="isAccountModalOpen = true"
+            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            + Nova Conta
+          </button>
           <NuxtLink to="/workspaces/new">
             <button class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-colors">
               + Novo Workspace
@@ -95,46 +154,46 @@ function formatCurrency(value: number) {
       <template v-else-if="dashboardData">
         <!-- KPI Cards -->
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <!-- Saldo Total -->
-          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+          <!-- Saldo Atual das Contas -->
+          <div class="rounded-lg border border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100 p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-600">Saldo Total</h3>
-              <Icon name="lucide:wallet" class="h-4 w-4 text-gray-400" />
+              <h3 class="text-sm font-medium text-purple-900">Saldo Atual</h3>
+              <Icon name="lucide:briefcase" class="h-4 w-4 text-purple-600" />
             </div>
-            <div class="text-2xl font-bold text-gray-900">{{ formatCurrency(dashboardData.totalBalance) }}</div>
-            <p class="text-xs text-gray-500 mt-1">Saldo atual em todas as contas</p>
+            <div class="text-2xl font-bold text-purple-900">{{ formatCurrency(dashboardData.currentAccountBalance) }}</div>
+            <p class="text-xs text-purple-700 mt-1">Nas contas</p>
           </div>
 
           <!-- Total de Receitas -->
           <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-600">Total de Receitas</h3>
+              <h3 class="text-sm font-medium text-gray-600">Receitas do Mês</h3>
               <Icon name="lucide:trending-up" class="h-4 w-4 text-gray-400" />
             </div>
             <div class="text-2xl font-bold text-green-600">{{ formatCurrency(dashboardData.totalRevenue) }}</div>
-            <p class="text-xs text-gray-500 mt-1">Receitas acumuladas</p>
+            <p class="text-xs text-gray-500 mt-1">+ Receitas</p>
           </div>
 
           <!-- Total de Despesas -->
           <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-600">Total de Despesas</h3>
+              <h3 class="text-sm font-medium text-gray-600">Despesas do Mês</h3>
               <Icon name="lucide:trending-down" class="h-4 w-4 text-gray-400" />
             </div>
             <div class="text-2xl font-bold text-red-600">{{ formatCurrency(dashboardData.totalExpenses) }}</div>
-            <p class="text-xs text-gray-500 mt-1">Despesas acumuladas</p>
+            <p class="text-xs text-gray-500 mt-1">- Despesas</p>
           </div>
 
-          <!-- Lucro / Sobra -->
-          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+          <!-- Lucro / Sobra (Saldo Final) -->
+          <div class="rounded-lg border border-green-200 bg-gradient-to-br from-green-50 to-green-100 p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-600">Lucro / Sobra</h3>
-              <Icon name="lucide:piggy-bank" class="h-4 w-4 text-gray-400" />
+              <h3 class="text-sm font-medium text-green-900">Lucro / Sobra</h3>
+              <Icon name="lucide:piggy-bank" class="h-4 w-4 text-green-600" />
             </div>
-            <div class="text-2xl font-bold" :class="dashboardData.profit >= 0 ? 'text-green-600' : 'text-red-600'">
+            <div class="text-2xl font-bold" :class="dashboardData.profit >= 0 ? 'text-green-900' : 'text-red-600'">
               {{ formatCurrency(dashboardData.profit) }}
             </div>
-            <p class="text-xs text-gray-500 mt-1">Saldo + Receitas - Despesas</p>
+            <p class="text-xs text-green-700 mt-1">Saldo + Receitas - Despesas</p>
           </div>
         </div>
 
@@ -174,7 +233,6 @@ function formatCurrency(value: number) {
             <p class="text-sm text-gray-600">Últimas movimentações financeiras ({{ dashboardData.recentTransactions?.length || 0 }} transações)</p>
           </div>
           
-          <!-- Debug: mostrar dados brutos -->
           <div v-if="dashboardData.recentTransactions && dashboardData.recentTransactions.length > 0" class="overflow-x-auto">
             <table class="w-full">
               <thead>
@@ -205,10 +263,10 @@ function formatCurrency(value: number) {
                     </span>
                   </td>
                   <td class="py-3 px-4 text-right text-sm font-semibold" :class="tx.type === 'revenue' ? 'text-green-600' : 'text-red-600'">
-                    R$ {{ tx.amount.toFixed(2) }}
+                    R$ {{ (tx.amount || 0).toFixed(2) }}
                   </td>
                   <td class="py-3 px-4 text-right text-sm font-bold" :class="tx.type === 'revenue' ? 'text-green-600' : 'text-red-600'">
-                    {{ tx.type === 'revenue' ? '+' : '-' }} R$ {{ tx.amount.toFixed(2) }}
+                    {{ tx.type === 'revenue' ? '+' : '-' }} R$ {{ (tx.amount || 0).toFixed(2) }}
                   </td>
                 </tr>
               </tbody>
@@ -236,5 +294,13 @@ function formatCurrency(value: number) {
         </NuxtLink>
       </div>
     </main>
+
+    <!-- Modal de Criação de Conta -->
+    <UiCreateAccountModal 
+      :open="isAccountModalOpen"
+      :month="selectedMonth"
+      @update:open="isAccountModalOpen = $event"
+      @success="refresh"
+    />
   </div>
 </template>

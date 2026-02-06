@@ -1,11 +1,7 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 
-// API permanente para criar contas globais do usuário autenticado
-// Substitui a API accounts-global-bypass.post.ts
-
 export default defineEventHandler(async (event) => {
     try {
-        // Obter usuário autenticado
         const user = await serverSupabaseUser(event)
         
         if (!user) {
@@ -22,36 +18,37 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, statusMessage: 'Nome e tipo são obrigatórios' })
         }
 
-        // CORREÇÃO: Usar user.id ou user.sub como fallback
+        if (!body.month) {
+            throw createError({ statusCode: 400, statusMessage: 'Mês é obrigatório (formato: YYYY-MM)' })
+        }
+
         const userId = user.id || user.sub
         
         if (!userId) {
-            console.error('❌ ERRO CRÍTICO: nem user.id nem user.sub estão disponíveis')
             throw createError({ statusCode: 401, statusMessage: 'ID do usuário não encontrado' })
         }
 
-        // Criar conta GLOBAL para o usuário autenticado
+        // Criar conta vinculada ao mês específico
         const { data, error } = await supabase
             .from('accounts')
             .insert({
-                user_id: userId,  // Usuário autenticado
-                workspace_id: body.workspace_id || null,  // Opcional (referência)
+                user_id: userId,
                 name: body.name,
                 type: body.type,
-                balance: body.balance || 0
+                balance: body.balance || 0,
+                month: body.month  // Vincular ao mês (formato: YYYY-MM)
             })
             .select()
             .single()
 
         if (error) {
-            console.error('❌ Erro ao criar conta global:', error)
+            console.error('❌ Erro ao criar conta:', error)
             throw createError({ statusCode: 500, statusMessage: error.message })
         }
 
-
         return data
     } catch (error: any) {
-        console.error('❌ Erro na API criar conta global:', error)
+        console.error('❌ Erro na API criar conta:', error)
         if (error.statusCode) {
             throw error
         }

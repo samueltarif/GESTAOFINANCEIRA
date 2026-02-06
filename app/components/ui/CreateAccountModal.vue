@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface Props {
   open: boolean
-  workspaceId: string
+  month: string  // Mês selecionado no dashboard (formato: YYYY-MM)
 }
 
 const props = defineProps<Props>()
@@ -25,6 +25,19 @@ const typeOptions = [
   { value: 'credit_card', label: 'Cartão de Crédito', icon: 'lucide:credit-card' }
 ]
 
+// Formatar o mês para exibição
+const formattedMonth = computed(() => {
+  if (!props.month) return ''
+  const parts = props.month.split('-')
+  if (parts.length !== 2) return ''
+  const yearStr = parts[0]
+  const monthStr = parts[1]
+  if (!yearStr || !monthStr) return ''
+  const date = new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1)
+  return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    .replace(/^\w/, c => c.toUpperCase())
+})
+
 const handleSubmit = async () => {
   if (!form.value.name.trim()) {
     return
@@ -38,7 +51,8 @@ const handleSubmit = async () => {
       body: {
         name: form.value.name.trim(),
         type: form.value.type,
-        balance: parseFloat(form.value.balance) || 0
+        balance: parseFloat(form.value.balance) || 0,
+        month: props.month  // Vincular ao mês selecionado
       }
     })
 
@@ -89,7 +103,9 @@ const closeModal = () => {
             <div class="flex items-center justify-between">
               <div>
                 <h2 class="text-xl font-semibold text-gray-900">Nova Conta</h2>
-                <p class="text-sm text-gray-600 mt-1">Crie uma nova conta para organizar suas transações</p>
+                <p class="text-sm text-gray-600 mt-1">
+                  Criando conta para <span class="font-medium text-green-600">{{ formattedMonth }}</span>
+                </p>
               </div>
               <button
                 @click="closeModal"
@@ -102,6 +118,17 @@ const closeModal = () => {
 
           <!-- Form -->
           <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
+            <!-- Alerta sobre isolamento mensal -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div class="flex gap-2">
+                <Icon name="lucide:info" class="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div class="text-sm text-blue-800">
+                  <p class="font-medium">Conta mensal</p>
+                  <p class="text-blue-700 mt-1">Esta conta pertencerá exclusivamente a {{ formattedMonth }} e não aparecerá em outros meses.</p>
+                </div>
+              </div>
+            </div>
+
             <!-- Nome -->
             <div class="space-y-2">
               <label for="account-name" class="block text-sm font-medium text-gray-700">
@@ -154,6 +181,7 @@ const closeModal = () => {
                 placeholder="0,00"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
+              <p class="text-xs text-gray-500">Este saldo será aplicado apenas em {{ formattedMonth }}</p>
             </div>
           </form>
 

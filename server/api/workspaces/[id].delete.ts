@@ -16,33 +16,39 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, statusMessage: 'ID do workspace é obrigatório' })
         }
 
-        // Validar UUID
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-        if (!uuidRegex.test(workspaceId)) {
-            throw createError({ statusCode: 400, statusMessage: 'ID do workspace inválido' })
-        }
-
         const userId = user.id || user.sub
         
         if (!userId) {
             throw createError({ statusCode: 401, statusMessage: 'ID do usuário não encontrado' })
         }
 
-        // Buscar apenas dados básicos do workspace (super rápido)
-        const { data: workspace, error } = await client
+        // Verificar se o workspace pertence ao usuário
+        const { data: workspace } = await client
             .from('workspaces')
-            .select('id, name, color, type, currency, created_at')
+            .select('id')
             .eq('id', workspaceId)
             .eq('user_id', userId)
             .single()
 
-        if (error || !workspace) {
+        if (!workspace) {
             throw createError({ statusCode: 404, statusMessage: 'Workspace não encontrado' })
         }
 
-        return workspace
+        // Excluir o workspace (CASCADE vai remover categories e transactions automaticamente)
+        const { error } = await client
+            .from('workspaces')
+            .delete()
+            .eq('id', workspaceId)
+            .eq('user_id', userId)
+
+        if (error) {
+            console.error('❌ Erro ao excluir workspace:', error)
+            throw createError({ statusCode: 500, statusMessage: 'Erro ao excluir workspace' })
+        }
+
+        return { success: true, message: 'Workspace excluído com sucesso' }
     } catch (error: any) {
-        console.error('❌ Erro na API workspace:', error)
+        console.error('❌ Erro na API delete workspace:', error)
         if (error.statusCode) {
             throw error
         }

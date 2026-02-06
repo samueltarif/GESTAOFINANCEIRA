@@ -31,10 +31,20 @@ const getTypeIcon = (type: string) => {
   }
   return icons[type as keyof typeof icons] || 'lucide:folder'
 }
+
+// Prefetch ao passar o mouse (carrega dados antes do clique)
+const handleMouseEnter = () => {
+  const now = new Date()
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  
+  // Prefetch das APIs principais em background
+  $fetch(`/api/workspaces/${props.workspace.id}`).catch(() => {})
+  $fetch(`/api/workspaces/${props.workspace.id}/dashboard?month=${month}`).catch(() => {})
+}
 </script>
 
 <template>
-  <Card class="hover:shadow-md transition-shadow cursor-pointer">
+  <Card class="hover:shadow-md transition-shadow cursor-pointer" @mouseenter="handleMouseEnter">
     <NuxtLink :to="`/workspaces/${workspace.id}`" class="block p-6">
       <div class="flex items-start justify-between">
         <div class="flex items-center space-x-3">
