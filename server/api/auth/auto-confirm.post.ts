@@ -31,17 +31,20 @@ export default defineEventHandler(async (event) => {
 
 
 
-        // Buscar o usuário pelo email
-        const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+        // Buscar o usuário diretamente pelo email (muito mais rápido!)
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000
+        })
         
         if (listError) {
             throw createError({ 
                 statusCode: 500, 
-                statusMessage: `Erro ao listar usuários: ${listError.message}` 
+                statusMessage: `Erro ao buscar usuário: ${listError.message}` 
             })
         }
 
-        const user = users.users.find(u => u.email === body.email)
+        const user = users.find(u => u.email === body.email)
         
         if (!user) {
             throw createError({ 

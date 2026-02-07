@@ -4,9 +4,14 @@ definePageMeta({
 })
 
 const supabase = useSupabaseClient()
+const route = useRoute()
 
 // Estado das abas
 const activeTab = ref<'login' | 'register'>('login')
+
+// Mensagem de sucesso do cadastro
+const registrationSuccess = ref(false)
+const successMessage = ref('')
 
 // Estados do Login
 const loginEmail = ref('')
@@ -14,11 +19,25 @@ const loginPassword = ref('')
 const loginLoading = ref(false)
 const loginError = ref('')
 
+// Verificar se veio do cadastro
+onMounted(() => {
+  if (route.query.registered === 'true') {
+    registrationSuccess.value = true
+    successMessage.value = '✅ Cadastro realizado com sucesso! Faça login para continuar.'
+    
+    // Preencher email se foi passado
+    if (route.query.email) {
+      loginEmail.value = route.query.email as string
+    }
+  }
+})
+
 // Estados do Cadastro
 const registerEmail = ref('')
 const registerPassword = ref('')
 const registerLoading = ref(false)
 const registerError = ref('')
+const registerSuccess = ref('')
 
 // Função de Login OTIMIZADA
 async function handleLogin() {
@@ -78,38 +97,54 @@ async function handleLogin() {
 
 
 
-// Função de Cadastro OTIMIZADA
+// Função de Cadastro (redireciona para página de registro)
 async function handleRegister() {
+  console.log('🔧 handleRegister CHAMADO na aba de cadastro')
+  
   registerError.value = ''
+  registerSuccess.value = ''
   registerLoading.value = true
   
-  // Inicia cadastro em background
-  const registerPromise = $fetch('/api/auth/register', {
-    method: 'POST',
-    body: { 
-      email: registerEmail.value, 
-      password: registerPassword.value 
-    }
-  })
-  
   try {
-    await registerPromise
+    console.log('🚀 Criando usuário via aba de cadastro...')
     
-    // Login automático após cadastro
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: registerEmail.value,
-      password: registerPassword.value,
+    // Criar usuário
+    await $fetch('/api/auth/register-instant', {
+      method: 'POST',
+      body: { 
+        email: registerEmail.value, 
+        password: registerPassword.value 
+      }
     })
     
-    // Redireciona IMEDIATAMENTE
-    navigateTo('/dashboard')
+    console.log('✅ Usuário criado com sucesso!')
     
-    if (signInError) {
-      // Se falhar, mostra mensagem mas já está no dashboard
-      console.error('Erro no login automático:', signInError)
-    }
+    // Mostrar mensagem de sucesso
+    registerSuccess.value = '✅ Cadastro realizado com sucesso! Redirecionando...'
+    
+    // Aguardar 1.5 segundos para mostrar mensagem
+    console.log('⏳ Aguardando 1.5s para mostrar mensagem...')
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // Mudar para aba de login
+    console.log('➡️ Mudando para aba de login...')
+    activeTab.value = 'login'
+    
+    // Definir mensagem de sucesso e preencher email
+    registrationSuccess.value = true
+    successMessage.value = '✅ Cadastro realizado com sucesso! Faça login para continuar.'
+    loginEmail.value = registerEmail.value
+    
+    // Limpar campos de cadastro
+    registerEmail.value = ''
+    registerPassword.value = ''
+    registerSuccess.value = ''
+    registerLoading.value = false
+    
+    console.log('✅ Processo concluído!')
     
   } catch (error: any) {
+    console.error('❌ ERRO ao cadastrar:', error)
     registerLoading.value = false
     if (error.data?.statusMessage) {
       registerError.value = error.data.statusMessage
@@ -153,14 +188,16 @@ async function handleRegister() {
       <div class="p-6">
         <!-- Aba de Login -->
         <div v-if="activeTab === 'login'" class="space-y-4">
+          <!-- Mensagem de Sucesso do Cadastro (apenas na aba de login) -->
+          <div v-if="registrationSuccess" class="mb-4 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+            <p class="text-green-800 font-medium text-center">{{ successMessage }}</p>
+          </div>
           <div class="text-center mb-6">
             <h2 class="text-2xl font-bold">Bem-vindo de volta</h2>
             <p class="text-muted-foreground text-sm mt-1">
               Entre com seu e-mail e senha
             </p>
           </div>
-
-
 
           <form @submit.prevent="handleLogin" class="space-y-4">
             <div>
@@ -249,7 +286,13 @@ async function handleRegister() {
               </p>
             </div>
 
-            <p v-if="registerError" class="text-sm text-destructive">
+            <!-- Mensagem de Sucesso -->
+            <div v-if="registerSuccess" class="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+              <p class="text-green-800 font-bold text-center">{{ registerSuccess }}</p>
+            </div>
+
+            <!-- Mensagem de Erro -->
+            <p v-if="registerError" class="text-sm text-destructive font-medium">
               {{ registerError }}
             </p>
 

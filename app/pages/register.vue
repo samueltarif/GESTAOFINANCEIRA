@@ -3,207 +3,91 @@ definePageMeta({
   layout: false
 })
 
-const supabase = useSupabaseClient()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMsg = ref('')
-const debugInfo = ref('')
 const successMsg = ref('')
-const showEmailSent = ref(false)
+const debugInfo = ref('')
 
-// Função de debug para mostrar informações na tela
 function addDebugInfo(message: string) {
   console.log(message)
   debugInfo.value += message + '\n'
 }
 
 async function handleRegister() {
-  addDebugInfo('🔧 FUNÇÃO handleRegister CHAMADA')
-  addDebugInfo(`📧 Email: ${email.value}`)
-  addDebugInfo(`🔒 Password length: ${password.value.length}`)
+  console.log('🔧 handleRegister CHAMADO')
+  addDebugInfo('🔧 INICIANDO')
   
   if (!email.value || !password.value) {
-    const msg = 'Preencha todos os campos'
-    addDebugInfo(`❌ Validação falhou: ${msg}`)
-    errorMsg.value = msg
+    console.log('❌ Campos vazios')
+    errorMsg.value = 'Preencha todos os campos'
     return
   }
   
-  addDebugInfo('✅ Validação passou, iniciando registro...')
   loading.value = true
   errorMsg.value = ''
+  successMsg.value = ''
   
   try {
-    addDebugInfo(`🔧 Fazendo chamada para /api/auth/register com email: ${email.value}`)
+    console.log('🚀 Criando usuário...')
+    addDebugInfo('🚀 Criando usuário...')
     
-    // Usar a API de registro que envia email de confirmação
-    const result = await $fetch('/api/auth/register', {
+    // Criar usuário
+    const result = await $fetch('/api/auth/register-instant', {
       method: 'POST',
-      body: { 
-        email: email.value, 
-        password: password.value 
-      }
+      body: { email: email.value, password: password.value }
     })
     
-    addDebugInfo(`✅ Resposta da API recebida: ${JSON.stringify(result)}`)
+    console.log('✅ Usuário criado!', result)
+    addDebugInfo('✅ Usuário criado!')
     
-    // Verificar se precisa confirmar email
-    if (result.needsEmailConfirmation) {
-      showEmailSent.value = true
-      successMsg.value = 'Cadastro realizado! Verifique seu email para confirmar o cadastro.'
-      loading.value = false
-      return
-    }
+    // Mostrar mensagem de sucesso
+    successMsg.value = '✅ Cadastro realizado com sucesso! Redirecionando para login...'
+    console.log('✅ Mensagem de sucesso definida')
     
-    // Se não precisa confirmar, fazer login automático
-    addDebugInfo('🔧 Iniciando login automático...')
-    const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value,
-    })
+    // Aguardar 1.5 segundos para mostrar mensagem
+    console.log('⏳ Aguardando 1.5s...')
+    await new Promise(resolve => setTimeout(resolve, 1500))
     
-    if (signInError) {
-      addDebugInfo(`❌ Erro no login automático: ${JSON.stringify(signInError)}`)
-      errorMsg.value = 'Conta criada com sucesso! Faça login para continuar.'
-      loading.value = false
-    } else {
-      addDebugInfo(`✅ Login automático realizado: ${JSON.stringify(signInData)}`)
-      addDebugInfo('🔧 Redirecionando para dashboard...')
-      navigateTo('/dashboard')
-    }
+    // Redirecionar para login
+    console.log('➡️ Redirecionando para login...')
+    addDebugInfo('➡️ Redirecionando para login...')
+    
+    const loginUrl = '/login?registered=true&email=' + encodeURIComponent(email.value)
+    console.log('URL de redirecionamento:', loginUrl)
+    
+    await navigateTo(loginUrl)
     
   } catch (error: any) {
-    addDebugInfo(`❌ ERRO CAPTURADO: ${JSON.stringify(error)}`)
-    addDebugInfo(`❌ Error.message: ${error.message}`)
-    addDebugInfo(`❌ Error.data: ${JSON.stringify(error.data)}`)
-    
-    if (error.data?.statusMessage) {
-      errorMsg.value = error.data.statusMessage
-    } else if (error.message) {
-      errorMsg.value = error.message
-    } else {
-      errorMsg.value = 'Erro inesperado. Tente novamente.'
-    }
-    
+    console.error('❌ ERRO:', error)
+    addDebugInfo(`❌ ERRO: ${error.message}`)
+    errorMsg.value = error.data?.statusMessage || error.message || 'Erro ao criar conta'
     loading.value = false
   }
 }
 
-// Log quando o componente é montado
 onMounted(() => {
-  console.log('🚀 REGISTER.VUE: Componente montado')
-  addDebugInfo('🚀 REGISTER.VUE: Componente carregado com sucesso')
-  addDebugInfo('🚀 REGISTER.VUE: Componente montado no DOM')
+  console.log('🚀 Página register.vue montada')
+  addDebugInfo('🚀 Página carregada')
 })
-
-// Função de teste para verificar se o JavaScript está funcionando
-function testJavaScript() {
-  addDebugInfo('🧪 TESTE: Função JavaScript chamada!')
-  alert('🧪 JavaScript está funcionando! Verifique o console para mais logs.')
-}
 </script>
 
 <template>
   <div class="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-    <!-- Debug Info Panel -->
+    <!-- Debug Panel -->
     <ClientOnly>
       <div v-if="debugInfo" class="fixed top-4 right-4 bg-black text-green-400 p-4 rounded-lg max-w-md max-h-96 overflow-auto text-xs font-mono z-50">
-        <h3 class="text-white font-bold mb-2">🔧 DEBUG LOG:</h3>
+        <h3 class="text-white font-bold mb-2">🔧 DEBUG:</h3>
         <pre>{{ debugInfo }}</pre>
-        <button 
-          @click="testJavaScript" 
-          class="mt-2 bg-blue-500 text-white px-2 py-1 rounded text-xs"
-        >
-          Testar JS
-        </button>
       </div>
     </ClientOnly>
 
-    <!-- Mensagem de Email Enviado -->
-    <div v-if="showEmailSent" class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-      <div class="text-center">
-        <!-- Ícone de Email -->
-        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-          <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-          </svg>
-        </div>
-
-        <!-- Título -->
-        <h2 class="text-3xl font-bold text-gray-900 mb-3">📧 Verifique seu Email!</h2>
-        
-        <!-- Mensagem de Sucesso -->
-        <div class="bg-green-50 border-2 border-green-300 rounded-lg p-4 mb-6">
-          <p class="text-green-800 font-bold text-lg mb-2">✅ Cadastro realizado com sucesso!</p>
-          <p class="text-green-700 text-sm">
-            Enviamos um email de confirmação para:
-          </p>
-          <p class="text-green-900 font-bold text-lg mt-2 break-all">{{ email }}</p>
-        </div>
-
-        <!-- Instruções Passo a Passo -->
-        <div class="text-left bg-blue-50 border-2 border-blue-300 rounded-lg p-5 mb-6">
-          <h3 class="font-bold text-blue-900 mb-3 flex items-center text-lg">
-            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            Próximos passos:
-          </h3>
-          <ol class="text-sm text-blue-800 space-y-2">
-            <li class="flex items-start">
-              <span class="font-bold mr-2">1.</span>
-              <span>Abra sua caixa de entrada de email</span>
-            </li>
-            <li class="flex items-start">
-              <span class="font-bold mr-2">2.</span>
-              <span>Procure por um email de confirmação</span>
-            </li>
-            <li class="flex items-start">
-              <span class="font-bold mr-2">3.</span>
-              <span><strong>Verifique também a pasta de SPAM/LIXO ELETRÔNICO</strong></span>
-            </li>
-            <li class="flex items-start">
-              <span class="font-bold mr-2">4.</span>
-              <span>Clique no link de confirmação no email</span>
-            </li>
-            <li class="flex items-start">
-              <span class="font-bold mr-2">5.</span>
-              <span>Após confirmar, faça login com suas credenciais</span>
-            </li>
-          </ol>
-        </div>
-
-        <!-- Aviso Importante -->
-        <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mb-6">
-          <p class="text-yellow-800 font-bold mb-2 flex items-center justify-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            ⚠️ Não recebeu o email?
-          </p>
-          <ul class="text-sm text-yellow-700 space-y-1 text-left">
-            <li>• Aguarde alguns minutos (pode demorar até 5 minutos)</li>
-            <li>• <strong>Verifique a pasta de SPAM</strong></li>
-            <li>• Verifique se o email está correto</li>
-          </ul>
-        </div>
-
-        <!-- Botão -->
-        <NuxtLink 
-          to="/login"
-          class="inline-block w-full px-6 py-4 bg-green-600 text-white font-bold text-lg rounded-lg hover:bg-green-700 transition-colors shadow-lg"
-        >
-          Ir para a Página de Login
-        </NuxtLink>
-      </div>
-    </div>
-
-    <!-- Formulário de Registro -->
-    <div v-else class="w-full max-w-md">
+    <!-- Formulário -->
+    <div class="w-full max-w-md">
       <AuthForm
         title="Criar conta"
-        description="Preencha os dados abaixo para começar a controlar suas finanças."
+        description="Preencha os dados para começar"
         @submit="handleRegister"
       >
         <template #fields>
@@ -223,11 +107,22 @@ function testJavaScript() {
             placeholder="••••••••"
             required
           />
-          <p v-if="errorMsg" class="text-sm text-destructive mt-2">{{ errorMsg }}</p>
+          
+          <!-- Mensagem de Sucesso -->
+          <div v-if="successMsg" class="mt-4 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+            <p class="text-green-800 font-bold text-center">{{ successMsg }}</p>
+          </div>
+          
+          <!-- Mensagem de Erro -->
+          <div v-if="errorMsg" class="mt-4 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+            <p class="text-red-800 font-bold text-center">{{ errorMsg }}</p>
+          </div>
         </template>
         
         <template #actions>
-          <AuthButton :loading="loading">Cadastrar</AuthButton>
+          <AuthButton :loading="loading">
+            {{ loading ? 'Cadastrando...' : 'Cadastrar' }}
+          </AuthButton>
         </template>
 
         <template #footer>

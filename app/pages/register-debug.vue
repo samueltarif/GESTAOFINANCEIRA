@@ -3,79 +3,77 @@ definePageMeta({
   layout: false
 })
 
-// Estados básicos
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMsg = ref('')
+const successMsg = ref('')
 const debugLogs = ref<string[]>([])
 
-// Função para adicionar logs
 function addLog(message: string) {
   console.log(message)
   debugLogs.value.push(`${new Date().toLocaleTimeString()}: ${message}`)
 }
 
-// Função de registro
 async function handleRegister() {
-  addLog('🔧 Iniciando processo de registro')
+  addLog('🔧 INÍCIO')
   
   if (!email.value || !password.value) {
-    addLog('❌ Campos obrigatórios não preenchidos')
+    addLog('❌ Campos vazios')
     errorMsg.value = 'Preencha todos os campos'
     return
   }
   
   loading.value = true
   errorMsg.value = ''
-  addLog('✅ Validação passou, fazendo requisição...')
+  successMsg.value = ''
+  const startTime = performance.now()
   
   try {
-    addLog(`🌐 Chamando API com email: ${email.value}`)
+    addLog('🚀 Criando usuário...')
     
-    const response = await fetch('/api/auth/register', {
+    const response = await fetch('/api/auth/register-instant', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value, password: password.value })
     })
     
-    addLog(`📡 Resposta recebida: ${response.status} ${response.statusText}`)
+    const createTime = performance.now() - startTime
+    addLog(`📡 Criado em ${createTime.toFixed(0)}ms`)
     
-    if (response.ok) {
-      const result = await response.json()
-      addLog(`✅ Sucesso: ${JSON.stringify(result)}`)
-      
-      // Redirecionar para login
-      addLog('🔄 Redirecionando para login...')
-      await navigateTo('/login')
-    } else {
+    if (!response.ok) {
       const error = await response.json()
-      addLog(`❌ Erro da API: ${JSON.stringify(error)}`)
-      errorMsg.value = error.statusMessage || 'Erro no cadastro'
+      addLog(`❌ Erro: ${error.statusMessage}`)
+      errorMsg.value = error.statusMessage || 'Erro'
+      loading.value = false
+      return
     }
     
+    const result = await response.json()
+    addLog(`✅ API: ${result.performance?.total_time_ms}ms`)
+    
+    successMsg.value = '✅ Cadastro realizado! Redirecionando para login...'
+    addLog('✅ Cadastro realizado!')
+    
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    addLog('➡️ Redirecionando para login...')
+    await navigateTo('/login?registered=true&email=' + encodeURIComponent(email.value))
+    
   } catch (error: any) {
-    addLog(`💥 Erro na requisição: ${error.message}`)
-    errorMsg.value = 'Erro de conexão. Tente novamente.'
-  } finally {
+    addLog(`💥 Erro: ${error.message}`)
+    errorMsg.value = 'Erro de conexão'
     loading.value = false
   }
 }
 
-// Função de teste
 function testJS() {
-  addLog('🧪 Teste de JavaScript executado!')
+  addLog('🧪 Teste OK!')
   alert('JavaScript funcionando!')
 }
 
-// Log inicial
 onMounted(() => {
-  addLog('🚀 Página de registro carregada')
+  addLog('🚀 Página carregada')
 })
 </script>
 
@@ -90,7 +88,7 @@ onMounted(() => {
       </button>
     </div>
 
-    <!-- Formulário Simples -->
+    <!-- Formulário -->
     <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
       <h1 class="text-2xl font-bold text-center mb-6">Criar Conta</h1>
       
@@ -104,6 +102,7 @@ onMounted(() => {
             type="email"
             v-model="email"
             required
+            :disabled="loading"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="seu@email.com"
           />
@@ -118,11 +117,18 @@ onMounted(() => {
             type="password"
             v-model="password"
             required
+            :disabled="loading"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="••••••••"
           />
         </div>
         
+        <!-- Mensagem de Sucesso -->
+        <div v-if="successMsg" class="p-3 bg-green-50 border border-green-200 rounded-md">
+          <p class="text-sm text-green-800 font-medium">{{ successMsg }}</p>
+        </div>
+        
+        <!-- Mensagem de Erro -->
         <div v-if="errorMsg" class="text-red-600 text-sm">
           {{ errorMsg }}
         </div>
@@ -130,10 +136,9 @@ onMounted(() => {
         <button
           type="submit"
           :disabled="loading"
-          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
-          <span v-if="loading">Carregando...</span>
-          <span v-else>Cadastrar</span>
+          {{ loading ? 'Cadastrando...' : 'Cadastrar' }}
         </button>
       </form>
       

@@ -7,61 +7,51 @@ const email = ref('')
 const password = ref('')
 const mensagem = ref('')
 const carregando = ref(false)
+const sucesso = ref(false)
 
 async function cadastrar() {
-  console.log('🔧 Função cadastrar chamada')
-  console.log('📧 Email:', email.value)
-  console.log('🔒 Senha:', password.value)
-  
   if (!email.value || !password.value) {
     mensagem.value = '❌ Preencha todos os campos'
     return
   }
   
   carregando.value = true
+  sucesso.value = false
   mensagem.value = '⏳ Cadastrando...'
   
   try {
-    console.log('🌐 Fazendo requisição...')
-    
-    const resposta = await fetch('/api/auth/register', {
+    // Criar usuário
+    const resposta = await fetch('/api/auth/register-instant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value
-      })
+      body: JSON.stringify({ email: email.value, password: password.value })
     })
     
-    console.log('📡 Resposta recebida:', resposta.status)
-    
     const dados = await resposta.json()
-    console.log('📄 Dados:', dados)
     
-    if (resposta.ok) {
-      mensagem.value = '✅ Cadastro realizado com sucesso!'
-      console.log('✅ Sucesso!')
-      
-      // Redirecionar após 2 segundos
-      setTimeout(() => {
-        navigateTo('/login')
-      }, 2000)
-    } else {
-      mensagem.value = `❌ Erro: ${dados.statusMessage || 'Erro desconhecido'}`
-      console.error('❌ Erro:', dados)
+    if (!resposta.ok) {
+      mensagem.value = `❌ ${dados.statusMessage || 'Erro'}`
+      carregando.value = false
+      return
     }
     
+    // Mostrar sucesso
+    sucesso.value = true
+    mensagem.value = '✅ Cadastro realizado com sucesso! Redirecionando para login...'
+    
+    // Aguardar e redirecionar
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    navigateTo('/login?registered=true&email=' + encodeURIComponent(email.value))
+    
   } catch (erro: any) {
-    console.error('💥 Erro na requisição:', erro)
     mensagem.value = `💥 Erro: ${erro.message}`
-  } finally {
     carregando.value = false
   }
 }
 </script>
 
 <template>
-  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; padding: 20px;">
+  <div style="min-h: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; padding: 20px;">
     <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; width: 100%;">
       <h1 style="text-align: center; margin-bottom: 30px; color: #333;">
         📝 Cadastro Simples
@@ -76,6 +66,7 @@ async function cadastrar() {
             v-model="email"
             type="email"
             required
+            :disabled="carregando"
             style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
             placeholder="seu@email.com"
           />
@@ -89,6 +80,7 @@ async function cadastrar() {
             v-model="password"
             type="password"
             required
+            :disabled="carregando"
             style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;"
             placeholder="••••••••"
           />
@@ -104,7 +96,15 @@ async function cadastrar() {
         </button>
       </form>
       
-      <div v-if="mensagem" style="margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 4px; text-align: center;">
+      <div 
+        v-if="mensagem" 
+        style="margin-top: 20px; padding: 10px; border-radius: 4px; text-align: center;"
+        :style="{ 
+          background: sucesso ? '#d4edda' : '#f0f0f0',
+          color: sucesso ? '#155724' : '#333',
+          border: sucesso ? '1px solid #c3e6cb' : 'none'
+        }"
+      >
         {{ mensagem }}
       </div>
       
