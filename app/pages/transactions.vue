@@ -11,7 +11,7 @@ interface Transaction {
   description: string
   amount: number
   date: string
-  type: 'income' | 'expense'
+  type: 'revenue' | 'expense'  // Corrigido: revenue ao invés de income
   category_id: string
   account_id: string
   category_name?: string
@@ -26,7 +26,7 @@ interface TransactionsResponse {
 
 // Filtros
 const searchQuery = ref('')
-const selectedType = ref<'all' | 'income' | 'expense'>('all')
+const selectedType = ref<'all' | 'revenue' | 'expense'>('all')  // Corrigido: revenue ao invés de income
 const selectedCategory = ref<string>('all')
 const selectedAccount = ref<string>('all')
 const selectedWorkspace = ref<string>('all')
@@ -76,7 +76,7 @@ const totalPages = computed(() => Math.ceil(totalTransactions.value / itemsPerPa
 // Estatísticas
 const stats = computed(() => {
   const txs = transactions.value
-  const totalIncome = txs.filter((t: Transaction) => t.type === 'income').reduce((sum: number, t: Transaction) => sum + t.amount, 0)
+  const totalIncome = txs.filter((t: Transaction) => t.type === 'revenue').reduce((sum: number, t: Transaction) => sum + t.amount, 0)
   const totalExpense = txs.filter((t: Transaction) => t.type === 'expense').reduce((sum: number, t: Transaction) => sum + t.amount, 0)
   return {
     totalIncome,
@@ -108,7 +108,7 @@ const exportToCSV = () => {
     t.description,
     t.category_name || '',
     t.account_name || '',
-    t.type === 'income' ? 'Receita' : 'Despesa',
+    t.type === 'revenue' ? 'Receita' : 'Despesa',
     t.amount.toFixed(2)
   ])
   
@@ -234,7 +234,7 @@ const handleEditSuccess = () => {
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="all">Todos</option>
-              <option value="income">Receitas</option>
+              <option value="revenue">Receitas</option>
               <option value="expense">Despesas</option>
             </select>
           </div>
@@ -391,12 +391,12 @@ const handleEditSuccess = () => {
                   <td class="py-3 px-4">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      :class="tx.type === 'income' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'"
+                      :class="tx.type === 'revenue' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'"
                     >
-                      {{ tx.type === 'income' ? 'Receita' : 'Despesa' }}
+                      {{ tx.type === 'revenue' ? 'Receita' : 'Despesa' }}
                     </span>
                   </td>
-                  <td class="py-3 px-4 text-right text-sm font-semibold" :class="tx.type === 'income' ? 'text-green-600' : 'text-red-600'">
+                  <td class="py-3 px-4 text-right text-sm font-semibold" :class="tx.type === 'revenue' ? 'text-green-600' : 'text-red-600'">
                     {{ formatCurrency(tx.amount) }}
                   </td>
                   <td class="py-3 px-4 text-right">
