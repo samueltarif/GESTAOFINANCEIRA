@@ -1,403 +1,350 @@
-# 🔗 Compartilhamento de Workspaces
+# 🤝 Compartilhamento de Workspaces
 
 ## Visão Geral
-Funcionalidade que permite aos usuários compartilhar seus workspaces com outros usuários do sistema, definindo diferentes níveis de permissão.
 
-## Estrutura Implementada
+Funcionalidade que permite compartilhar workspaces com outros usuários, definindo diferentes níveis de permissão.
 
-### 📊 Banco de Dados
+## Estrutura do Banco de Dados
 
-#### Tabela: `workspace_shares`
-**Arquivo**: `supabase_migrations/003_workspace_sharing.sql`
+### Tabela: `workspace_members`
 
-**Campos**:
-- `id` (UUID) - Identificador único
-- `workspace_id` (UUID) - Referência ao workspace
-- `shared_with_user_id` (UUID) - Usuário que recebe o acesso
-- `shared_by_user_id` (UUID) - Usuário que compartilhou
-- `role` (TEXT) - Nível de permissão: `viewer`, `editor`, `admin`
-- `created_at` (TIMESTAMPTZ) - Data de criação
+```sql
+CREATE TABLE workspace_members (
+    id UUID PRIMARY KEY,
+    workspace_id UUID REFERENCES workspaces(id),
+    user_id UUID REFERENCES users(id),
+    role TEXT CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
+    status TEXT CHECK (status IN ('pending', 'accepted', 'rejected')),
+    invited_by UUID REFERENCES users(id),
+    invited_at TIMESTAMPTZ,
+    accepted_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ
+)
+```
 
-**Constraints**:
-- UNIQUE(workspace_id, shared_with_user_id) - Evita compartilhamentos duplicados
-- CHECK(role IN ('viewer', 'editor', 'admin')) - Valida roles
+### Papéis e Permissões
 
-**Índices**:
-- `idx_workspace_shares_workspace_id` - Performance em buscas por workspace
-- `idx_workspace_shares_shared_with_user_id` - Performance em buscas por usuário
+| Papel | Permissões |
+|-------|-----------|
+| **Owner** | Controle total do workspace, não pode ser removido |
+| **Admin** | Gerenciar membros, configurações, criar/editar/excluir dados |
+| **Member** | Criar e editar transações, categorias e contas |
+| **Viewer** | Apenas visualização, sem edição |
 
-**Row Level Security (RLS)**:
-- ✅ Usuários podem ver compartilhamentos onde são donos ou foram compartilhados
-- ✅ Apenas donos podem criar compartilhamentos
-- ✅ Apenas donos podem deletar compartilhamentos
-- ✅ Apenas donos podem atualizar compartilhamentos
-- ✅ Política de workspaces atualizada para incluir workspaces compartilhados
+## APIs Criadas
 
----
+### 1. Listar Membros
+**GET** `/api/workspaces/[id]/members`
 
-### 🔌 APIs
+Retorna todos os membros de um workspace.
 
-#### 1. Listar Compartilhamentos
-**Endpoint**: `GET /api/workspaces/[id]/shares`
-**Arquivo**: `server/api/workspaces/[id]/shares.get.ts`
-
-**Funcionalidade**:
-- Lista todos os compartilhamentos de um workspace
-- Retorna informações dos usuários (email)
-- Apenas o dono do workspace pode listar
-
-**Resposta**:
+**Resposta:**
 ```json
 [
   {
     "id": "uuid",
     "workspace_id": "uuid",
-    "shared_with_user_id": "uuid",
-    "shared_by_user_id": "uuid",
-    "role": "viewer",
-    "created_at": "2024-01-01T00:00:00Z",
-    "shared_with": {
-      "id": "uuid",
-      "email": "usuario@exemplo.com"
-    },
-    "shared_by": {
-      "id": "uuid",
-      "email": "dono@exemplo.com"
-    }
+    "user_id": "uuid",
+    "email": "usuario@exemplo.com",
+    "role": "member",
+    "status": "accepted",
+    "invited_at": "2024-01-01T00:00:00Z",
+    "accepted_at": "2024-01-01T00:00:00Z"
   }
 ]
 ```
 
 ---
 
-#### 2. Criar Compartilhamento
-**Endpoint**: `POST /api/workspaces/[id]/shares`
-**Arquivo**: `server/api/workspaces/[id]/shares.post.ts`
+### 2. Convidar Membro
+**POST** `/api/workspaces/[id]/members`
 
-**Body**:
+Envia convite para um usuário.
+
+**Body:**
 ```json
 {
   "email": "usuario@exemplo.com",
-  "role": "viewer"
+  "role": "member"
 }
 ```
 
-**Validações**:
-- ✅ Email e role são obrigatórios
-- ✅ Role deve ser: viewer, editor ou admin
-- ✅ Usuário deve existir no sistema
-- ✅ Não pode compartilhar consigo mesmo
-- ✅ Não pode duplicar compartilhamento
-- ✅ Apenas dono pode compartilhar
+**Permissões:** Owner ou Admin
 
-**Resposta**:
+**Resposta:**
 ```json
 {
-  "id": "uuid",
-  "workspace_id": "uuid",
-  "shared_with_user_id": "uuid",
-  "role": "viewer",
-  "created_at": "2024-01-01T00:00:00Z",
-  "shared_with": {
+  "success": true,
+  "member": {
     "id": "uuid",
-    "email": "usuario@exemplo.com"
+    "workspace_id": "uuid",
+    "user_id": "uuid",
+    "email": "usuario@exemplo.com",
+    "role": "member",
+    "status": "pending"
   }
 }
 ```
 
 ---
 
-#### 3. Atualizar Permissão
-**Endpoint**: `PUT /api/workspaces/shares/[shareId]`
-**Arquivo**: `server/api/workspaces/shares/[shareId].put.ts`
+### 3. Remover Membro
+**DELETE** `/api/workspaces/[id]/members/[memberId]`
 
-**Body**:
-```json
-{
-  "role": "editor"
-}
-```
+Remove um membro do workspace.
 
-**Validações**:
-- ✅ Role é obrigatório
-- ✅ Role deve ser: viewer, editor ou admin
-- ✅ Apenas dono pode atualizar
+**Permissões:** 
+- Owner ou Admin (para remover outros)
+- Qualquer membro (para sair do workspace)
+
+**Restrições:**
+- Não pode remover o owner
 
 ---
 
-#### 4. Remover Compartilhamento
-**Endpoint**: `DELETE /api/workspaces/shares/[shareId]`
-**Arquivo**: `server/api/workspaces/shares/[shareId].delete.ts`
+### 4. Atualizar Membro
+**PUT** `/api/workspaces/[id]/members/[memberId]`
 
-**Validações**:
-- ✅ Apenas dono pode remover
+Atualiza papel ou aceita/rejeita convite.
 
-**Resposta**:
+**Body (alterar papel):**
 ```json
 {
-  "success": true,
-  "message": "Compartilhamento removido com sucesso"
+  "role": "admin"
 }
 ```
 
+**Body (aceitar convite):**
+```json
+{
+  "status": "accepted"
+}
+```
+
+**Permissões:**
+- Alterar papel: Owner ou Admin
+- Aceitar/rejeitar: Apenas o próprio usuário
+
 ---
 
-### 🎨 Interface
+### 5. Listar Convites Pendentes
+**GET** `/api/workspace-invites`
 
-#### Componente: `ShareWorkspaceModal.vue`
-**Arquivo**: `app/components/workspaces/ShareWorkspaceModal.vue`
+Retorna convites pendentes do usuário logado.
 
-**Props**:
-- `open: boolean` - Controla visibilidade do modal
+**Resposta:**
+```json
+[
+  {
+    "id": "uuid",
+    "workspace_id": "uuid",
+    "workspace_name": "Meu Workspace",
+    "workspace_type": "business",
+    "role": "member",
+    "invited_at": "2024-01-01T00:00:00Z",
+    "invited_by_email": "dono@exemplo.com"
+  }
+]
+```
+
+## Componentes Criados
+
+### 1. `ShareWorkspaceModal.vue`
+Modal para gerenciar membros de um workspace.
+
+**Props:**
 - `workspaceId: string` - ID do workspace
 - `workspaceName: string` - Nome do workspace
+- `open: boolean` - Controla visibilidade
 
-**Emits**:
-- `update:open` - Atualiza estado do modal
-- `success` - Emitido após ação bem-sucedida
-
-**Funcionalidades**:
-1. **Formulário de Compartilhamento**:
-   - Input de email
-   - Select de permissão (viewer/editor/admin)
-   - Botão de compartilhar
-
-2. **Lista de Compartilhamentos**:
-   - Exibe todos os compartilhamentos ativos
-   - Mostra email e data de compartilhamento
-   - Select para alterar permissão
-   - Botão para remover acesso
-
-3. **Estados**:
-   - Loading durante operações
-   - Empty state quando não há compartilhamentos
-   - Feedback visual de sucesso/erro
+**Funcionalidades:**
+- Listar membros atuais
+- Convidar novos membros
+- Alterar papel dos membros
+- Remover membros
+- Informações sobre papéis e permissões
 
 ---
 
-### 📱 Integração na Página de Workspaces
+### 2. `WorkspaceInvites.vue`
+Componente para exibir e gerenciar convites pendentes.
 
-**Arquivo**: `app/pages/workspaces/index.vue`
+**Funcionalidades:**
+- Lista convites pendentes
+- Aceitar convite
+- Rejeitar convite
+- Auto-atualiza após ações
 
-**Adições**:
-1. Botão de compartilhar em cada card de workspace
-2. Modal de compartilhamento
-3. Ícone de compartilhamento (share-2)
+## Fluxo de Uso
 
-**Posicionamento**:
-- Botão de compartilhar: direita do botão de edição
-- Cor verde para destacar funcionalidade colaborativa
+### 1. Convidar Usuário
 
----
+1. Owner/Admin abre o workspace
+2. Clica no botão de compartilhar (ícone de share)
+3. Digita o email do usuário
+4. Seleciona o papel (Admin/Member/Viewer)
+5. Clica em "Convidar"
+6. Convite é enviado com status "pending"
 
-## Níveis de Permissão
+### 2. Aceitar Convite
 
-### 👁️ Viewer (Visualizador)
-**Permissões**:
-- ✅ Visualizar dashboard do workspace
-- ✅ Visualizar transações
-- ✅ Visualizar categorias
-- ✅ Visualizar contas
-- ❌ Criar/editar/deletar qualquer dado
+1. Usuário convidado faz login
+2. Vê notificação de convite pendente
+3. Clica em "Aceitar"
+4. Workspace aparece na lista de workspaces
+5. Status muda para "accepted"
 
-**Uso**: Compartilhar com pessoas que precisam apenas acompanhar
+### 3. Gerenciar Membros
 
----
+1. Owner/Admin abre modal de membros
+2. Vê lista de todos os membros
+3. Pode alterar papel usando dropdown
+4. Pode remover membros (exceto owner)
 
-### ✏️ Editor
-**Permissões**:
-- ✅ Todas as permissões de Viewer
-- ✅ Criar transações
-- ✅ Editar transações
-- ✅ Deletar transações
-- ✅ Criar categorias
-- ✅ Editar categorias
-- ❌ Deletar workspace
-- ❌ Gerenciar compartilhamentos
+## Segurança (RLS)
 
-**Uso**: Compartilhar com pessoas que precisam gerenciar dados
+### Políticas Implementadas
 
----
+1. **Visualização**: Usuários veem membros dos workspaces que pertencem
+2. **Inserção**: Apenas owners e admins podem adicionar membros
+3. **Atualização**: Owners e admins podem alterar papéis
+4. **Exclusão**: Owners e admins podem remover membros
+5. **Auto-atualização**: Usuários podem aceitar/rejeitar seus próprios convites
 
-### 👑 Admin (Administrador)
-**Permissões**:
-- ✅ Todas as permissões de Editor
-- ✅ Editar workspace
-- ✅ Gerenciar compartilhamentos
-- ✅ Deletar workspace
+### Trigger Automático
 
-**Uso**: Compartilhar com co-administradores
-
----
-
-## Como Usar
-
-### 1. Compartilhar um Workspace
-
-1. Acesse a página de Workspaces
-2. Clique no ícone de compartilhar (🔗) no card do workspace
-3. Digite o email do usuário
-4. Selecione a permissão desejada
-5. Clique em "Compartilhar"
-
-### 2. Alterar Permissão
-
-1. Abra o modal de compartilhamento
-2. Na lista de compartilhamentos, use o select para alterar a permissão
-3. A alteração é aplicada imediatamente
-
-### 3. Remover Acesso
-
-1. Abra o modal de compartilhamento
-2. Na lista de compartilhamentos, clique no ícone de X
-3. Confirme a remoção
-
----
+Ao criar um workspace, o criador é automaticamente adicionado como "owner" com status "accepted".
 
 ## Instalação
 
-### 1. Executar Migration no Supabase
+### 1. Executar Migration
 
-```sql
--- Execute o arquivo: supabase_migrations/003_workspace_sharing.sql
--- Ou copie e cole o conteúdo no SQL Editor do Supabase
+```bash
+# No Supabase SQL Editor, execute:
+supabase_migrations/003_workspace_sharing.sql
 ```
 
-### 2. Verificar Tabela Criada
+### 2. Verificar Tabela
 
 ```sql
-SELECT * FROM workspace_shares;
+SELECT * FROM workspace_members;
 ```
 
-### 3. Testar Políticas RLS
+### 3. Testar APIs
 
-```sql
--- Verificar políticas
-SELECT * FROM pg_policies WHERE tablename = 'workspace_shares';
-```
-
----
-
-## Testes
-
-### Script de Teste
-**Arquivo**: `test-workspace-sharing.js`
-
-**Como executar**:
 ```bash
 node test-workspace-sharing.js
 ```
 
-**O que testa**:
-1. Listagem de workspaces
-2. Listagem de compartilhamentos
-3. Estrutura das APIs (código comentado para teste manual)
+## Testes
 
-### Teste Manual
+### Cenários de Teste
 
-1. **Criar dois usuários**:
-   - Usuário A: samuel.tarif@gmail.com
-   - Usuário B: outro-email@exemplo.com
+1. ✅ **Criar workspace** → Owner adicionado automaticamente
+2. ✅ **Convidar usuário** → Convite criado com status pending
+3. ✅ **Aceitar convite** → Status muda para accepted
+4. ✅ **Rejeitar convite** → Status muda para rejected
+5. ✅ **Alterar papel** → Role atualizado
+6. ✅ **Remover membro** → Membro removido
+7. ✅ **Tentar remover owner** → Erro
+8. ✅ **Workspace compartilhado aparece na lista** → Visível para membros
+9. ✅ **Permissões respeitadas** → Apenas owners/admins gerenciam
 
-2. **Login com Usuário A**:
-   - Criar um workspace
-   - Compartilhar com Usuário B (viewer)
+### Script de Teste
 
-3. **Login com Usuário B**:
-   - Verificar se o workspace aparece na lista
-   - Tentar acessar o workspace
-   - Verificar permissões (não pode editar)
+```bash
+# Com servidor rodando em localhost:3002
+node test-workspace-sharing.js
+```
 
-4. **Voltar para Usuário A**:
-   - Alterar permissão para "editor"
+## Interface do Usuário
 
-5. **Voltar para Usuário B**:
-   - Verificar se pode editar agora
+### Página de Workspaces
 
-6. **Voltar para Usuário A**:
-   - Remover compartilhamento
+- **Botão de compartilhar** (ícone share-2) em cada card de workspace
+- **Badge de convites pendentes** no topo da página
+- **Lista de convites** com botões Aceitar/Rejeitar
 
-7. **Voltar para Usuário B**:
-   - Verificar se workspace sumiu da lista
+### Modal de Compartilhamento
 
----
-
-## Segurança
-
-### ✅ Implementado
-
-1. **Row Level Security (RLS)**:
-   - Políticas impedem acesso não autorizado
-   - Apenas donos podem gerenciar compartilhamentos
-
-2. **Validações de API**:
-   - Verificação de propriedade do workspace
-   - Validação de roles
-   - Prevenção de duplicatas
-   - Prevenção de auto-compartilhamento
-
-3. **Autenticação**:
-   - Todas as APIs requerem autenticação
-   - Uso de `serverSupabaseUser` para verificar usuário
-
-### 🔒 Boas Práticas
-
-1. Sempre verificar propriedade antes de operações
-2. Usar constraints de banco para integridade
-3. Validar inputs no servidor
-4. Usar RLS para segurança em camadas
-
----
+- **Formulário de convite** (email + papel)
+- **Lista de membros** com status e papel
+- **Dropdown para alterar papel** (exceto owner)
+- **Botão de remover** (exceto owner)
+- **Informações sobre papéis** (tooltip/info box)
 
 ## Próximas Melhorias
 
-### 🚀 Funcionalidades Futuras
+### Funcionalidades Futuras
 
-1. **Notificações**:
-   - Notificar usuário quando workspace é compartilhado
-   - Email de convite
+1. **Notificações por email** ao receber convite
+2. **Histórico de atividades** dos membros
+3. **Permissões granulares** por recurso
+4. **Convite por link** (sem precisar email)
+5. **Grupos de membros** para facilitar gestão
+6. **Auditoria** de ações dos membros
+7. **Limite de membros** por plano
+8. **Transferir ownership** para outro membro
 
-2. **Convites por Link**:
-   - Gerar link de convite temporário
-   - Definir expiração do link
+### Melhorias de UX
 
-3. **Auditoria**:
-   - Log de quem acessou o workspace
-   - Log de alterações feitas por cada usuário
-
-4. **Permissões Granulares**:
-   - Permissões por recurso (transações, categorias, etc.)
-   - Permissões customizadas
-
-5. **Grupos**:
-   - Criar grupos de usuários
-   - Compartilhar com grupos
-
----
-
-## Status
-
-✅ **IMPLEMENTADO** - Funcionalidade completa e pronta para uso
+1. **Badge de "Compartilhado"** nos cards de workspace
+2. **Avatar dos membros** no card
+3. **Busca de membros** na lista
+4. **Filtros** (por papel, status)
+5. **Ordenação** (por nome, data)
+6. **Paginação** para muitos membros
+7. **Confirmação visual** ao convidar/remover
+8. **Toast notifications** para feedback
 
 ## Arquivos Criados/Modificados
 
-- ✅ `supabase_migrations/003_workspace_sharing.sql` (novo)
-- ✅ `server/api/workspaces/[id]/shares.get.ts` (novo)
-- ✅ `server/api/workspaces/[id]/shares.post.ts` (novo)
-- ✅ `server/api/workspaces/shares/[shareId].delete.ts` (novo)
-- ✅ `server/api/workspaces/shares/[shareId].put.ts` (novo)
-- ✅ `app/components/workspaces/ShareWorkspaceModal.vue` (novo)
-- ✅ `app/pages/workspaces/index.vue` (modificado)
-- ✅ `test-workspace-sharing.js` (novo)
+### Novos Arquivos
 
-## Commits
+- ✅ `supabase_migrations/003_workspace_sharing.sql`
+- ✅ `server/api/workspaces/[id]/members.get.ts`
+- ✅ `server/api/workspaces/[id]/members.post.ts`
+- ✅ `server/api/workspaces/[id]/members/[memberId].delete.ts`
+- ✅ `server/api/workspaces/[id]/members/[memberId].put.ts`
+- ✅ `server/api/workspace-invites.get.ts`
+- ✅ `app/components/workspaces/ShareWorkspaceModal.vue`
+- ✅ `app/components/workspaces/WorkspaceInvites.vue`
+- ✅ `test-workspace-sharing.js`
 
-```bash
-git add supabase_migrations/003_workspace_sharing.sql
-git add server/api/workspaces/
-git add app/components/workspaces/ShareWorkspaceModal.vue
-git add app/pages/workspaces/index.vue
-git add test-workspace-sharing.js
-git add FEATURE_COMPARTILHAMENTO_WORKSPACES.md
-git commit -m "feat: Adiciona compartilhamento de workspaces com 3 níveis de permissão"
-```
+### Arquivos Modificados
+
+- ✅ `app/pages/workspaces/index.vue` (adicionado componente de convites)
+
+## Status
+
+🚧 **EM DESENVOLVIMENTO** - Aguardando execução da migration e testes
+
+## Como Testar
+
+1. **Execute a migration** no Supabase
+2. **Reinicie o servidor** (npm run dev)
+3. **Faça login** com um usuário
+4. **Crie um workspace** se não tiver
+5. **Clique no ícone de compartilhar** no card do workspace
+6. **Convide outro usuário** (precisa estar cadastrado)
+7. **Faça login com o usuário convidado**
+8. **Aceite o convite** na página de workspaces
+9. **Verifique** se o workspace aparece na lista
+10. **Teste as permissões** de cada papel
+
+## Troubleshooting
+
+### Erro: "Usuário não encontrado"
+- Certifique-se que o email está cadastrado no sistema
+
+### Erro: "Sem permissão"
+- Verifique se o usuário é owner ou admin do workspace
+
+### Convite não aparece
+- Verifique se a migration foi executada
+- Verifique se o status é "pending"
+- Recarregue a página
+
+### Workspace compartilhado não aparece
+- Certifique-se que o convite foi aceito (status = "accepted")
+- Verifique as políticas RLS no Supabase
