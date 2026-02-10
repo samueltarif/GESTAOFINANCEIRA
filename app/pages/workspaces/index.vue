@@ -44,6 +44,8 @@ const workspaceToDelete = ref<string | null>(null)
 const isDeleting = ref(false)
 const showEditWorkspaceModal = ref(false)
 const workspaceToEdit = ref<WorkspacePreview | null>(null)
+const showShareModal = ref(false)
+const workspaceToShare = ref<WorkspacePreview | null>(null)
 
 function toggleWorkspaceSelection(id: string) {
   if (selectedWorkspaces.value.has(id)) {
@@ -132,6 +134,11 @@ async function handleWorkspaceEditSuccess() {
   await refresh()
 }
 
+function openShareModal(workspace: WorkspacePreview) {
+  workspaceToShare.value = workspace
+  showShareModal.value = true
+}
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 }
@@ -203,6 +210,9 @@ const getDeleteMessage = computed(() => {
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <!-- Convites Pendentes -->
+      <WorkspacesWorkspaceInvites />
+
       <!-- Page Header -->
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -285,6 +295,15 @@ const getDeleteMessage = computed(() => {
               class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
           </div>
+
+          <!-- Botão de Compartilhamento -->
+          <button
+            @click.stop="openShareModal(workspace)"
+            class="absolute top-4 right-28 z-10 p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+            title="Compartilhar workspace"
+          >
+            <Icon name="lucide:share-2" class="h-5 w-5" />
+          </button>
 
           <!-- Botão de Edição -->
           <button
@@ -405,6 +424,14 @@ const getDeleteMessage = computed(() => {
       v-model:open="showEditWorkspaceModal"
       :workspace="workspaceToEdit"
       @success="handleWorkspaceEditSuccess"
+    />
+
+    <!-- Modal de Compartilhamento -->
+    <WorkspacesShareWorkspaceModal
+      v-if="workspaceToShare"
+      v-model:open="showShareModal"
+      :workspace-id="workspaceToShare.id"
+      :workspace-name="workspaceToShare.name"
     />
 
     <!-- Modal de Confirmação de Exclusão -->
