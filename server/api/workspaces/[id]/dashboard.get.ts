@@ -61,16 +61,32 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 404, statusMessage: 'Workspace não encontrado' })
         }
 
-        // Buscar categorias do workspace
+        // Buscar TODOS os workspaces do usuário
+        const { data: allWorkspaces } = await client
+            .from('workspaces')
+            .select('id')
+            .eq('user_id', userId)
+
+        const workspaceIds = (allWorkspaces || []).map(w => w.id)
+
+        // Buscar TODAS as categorias de TODOS os workspaces do usuário (não apenas do workspace atual)
         const { data: categories } = await client
             .from('categories')
             .select('id, name, color, type')
-            .eq('workspace_id', workspaceId)
+            .in('workspace_id', workspaceIds)
 
         const categoryMap = new Map(categories?.map(c => [c.id, c]) || [])
-        const categoryIds = Array.from(categoryMap.keys())
+        const allCategoryIds = Array.from(categoryMap.keys())
 
-        if (categoryIds.length === 0) {
+        // Buscar categorias apenas do workspace atual (para transações recentes)
+        const { data: workspaceCategories } = await client
+            .from('categories')
+            .select('id')
+            .eq('workspace_id', workspaceId)
+
+        const workspaceCategoryIds = (workspaceCategories || []).map(c => c.id)
+
+        if (allCategoryIds.length === 0) {
             // Buscar saldo das contas mesmo sem categorias
             const { data: accounts } = await client
                 .from('accounts')
@@ -106,29 +122,29 @@ export default defineEventHandler(async (event) => {
                 .eq('user_id', userId)
                 .eq('month', monthFilter || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`),
             
-            // Receitas do mês
+            // Receitas do mês (TODAS as categorias do usuário)
             client
                 .from('transactions')
                 .select('amount, category_id')
                 .ilike('type', 'revenue')
-                .in('category_id', categoryIds)
+                .in('category_id', allCategoryIds)
                 .gte('date', startDate)
                 .lt('date', endDate),
             
-            // Despesas do mês
+            // Despesas do mês (TODAS as categorias do usuário)
             client
                 .from('transactions')
                 .select('amount, category_id')
                 .ilike('type', 'expense')
-                .in('category_id', categoryIds)
+                .in('category_id', allCategoryIds)
                 .gte('date', startDate)
                 .lt('date', endDate),
             
-            // Transações recentes
+            // Transações recentes (apenas do workspace atual)
             client
                 .from('transactions')
                 .select('id, date, description, category_id, account_id, type, amount')
-                .in('category_id', categoryIds)
+                .in('category_id', workspaceCategoryIds.length > 0 ? workspaceCategoryIds : ['00000000-0000-0000-0000-000000000000'])
                 .gte('date', startDate)
                 .lt('date', endDate)
                 .order('date', { ascending: false })
@@ -180,16 +196,16 @@ export default defineEventHandler(async (event) => {
                 Promise.all([
                     client
                         .from('transactions')
-                        .select('amount')
+                        .select('amount, category_id')
                         .ilike('type', 'revenue')
-                        .in('category_id', categoryIds)
+                        .in('category_id', allCategoryIds)
                         .gte('date', monthStart)
                         .lt('date', monthEnd),
                     client
                         .from('transactions')
-                        .select('amount')
+                        .select('amount, category_id')
                         .ilike('type', 'expense')
-                        .in('category_id', categoryIds)
+                        .in('category_id', allCategoryIds)
                         .gte('date', monthStart)
                         .lt('date', monthEnd)
                 ])
@@ -199,8 +215,22 @@ export default defineEventHandler(async (event) => {
         const evolutionResults = await Promise.all(evolutionPromises)
         
         evolutionResults.forEach(([revenueRes, expenseRes]) => {
-            const rev = revenueRes.data?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0
-            const exp = expenseRes.data?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0
+            // Filtrar apenas transações de categorias do usuário
+            let rev = 0
+            let exp = 0
+            
+            revenueRes.data?.forEach(tx => {
+                if (categoryMap.has(tx.category_id)) {
+                    rev += tx.amount || 0
+                }
+            })
+            
+            expenseRes.data?.forEach(tx => {
+                if (categoryMap.has(tx.category_id)) {
+                    exp += tx.amount || 0
+                }
+            })
+            
             monthlyRevenues.push(rev)
             monthlyExpenses.push(exp)
         })

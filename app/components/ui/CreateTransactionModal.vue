@@ -22,14 +22,17 @@ const form = ref({
 const isSubmitting = ref(false)
 const accounts = ref<any[]>([])
 const categories = ref<any[]>([])
+const showToast = ref(false)
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error'>('success')
 
 // Buscar contas e categorias quando o modal abrir
 watch(() => props.open, async (isOpen) => {
   if (isOpen && props.workspaceId) {
     try {
       const [accountsRes, categoriesRes] = await Promise.all([
-        $fetch(`/api/accounts`),
-        $fetch(`/api/categories?workspace_id=${props.workspaceId}`)
+        $fetch(`/api/accounts`, { credentials: 'include' }),
+        $fetch(`/api/categories?workspace_id=${props.workspaceId}`, { credentials: 'include' })
       ])
       accounts.value = accountsRes || []
       categories.value = categoriesRes || []
@@ -55,8 +58,24 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
+    console.log('📤 Enviando transação...')
+    
+    // Verificar se o usuário está autenticado
+    const supabase = useSupabaseClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      console.error('❌ Sem sessão ativa')
+      alert('Sessão expirada. Por favor, faça login novamente.')
+      await navigateTo('/login')
+      return
+    }
+    
+    console.log('✅ Sessão ativa:', session.user.email)
+    
     const result = await $fetch('/api/transactions', {
       method: 'POST',
+      credentials: 'include',
       body: {
         account_id: form.value.account_id,
         category_id: form.value.category_id,
@@ -69,6 +88,11 @@ const handleSubmit = async () => {
 
     console.log('✅ Transação criada com sucesso:', result)
 
+    // Mostrar toast de sucesso
+    toastMessage.value = 'Transação criada com sucesso!'
+    toastType.value = 'success'
+    showToast.value = true
+
     // Reset form
     form.value = {
       type: 'expense',
@@ -79,11 +103,16 @@ const handleSubmit = async () => {
       category_id: ''
     }
 
-    emit('update:open', false)
-    emit('success')
+    // Fechar modal após 1 segundo
+    setTimeout(() => {
+      emit('update:open', false)
+      emit('success')
+    }, 1000)
   } catch (error) {
     console.error('❌ Erro ao criar transação:', error)
-    alert('Erro ao criar transação. Verifique o console.')
+    toastMessage.value = 'Erro ao criar transação. Verifique os dados e tente novamente.'
+    toastType.value = 'error'
+    showToast.value = true
   } finally {
     isSubmitting.value = false
   }
@@ -256,5 +285,13 @@ const closeModal = () => {
         </div>
       </div>
     </Transition>
+    
+    <!-- Toast de Notificação -->
+    <UiToast
+      v-model:show="showToast"
+      :message="toastMessage"
+      :type="toastType"
+      :duration="3000"
+    />
   </Teleport>
 </template>

@@ -1,7 +1,8 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import type { Database } from '~/types/database.types'
 
 export default defineEventHandler(async (event) => {
-  const supabase = await serverSupabaseClient(event)
+  const supabase = await serverSupabaseClient<Database>(event)
   const user = await serverSupabaseUser(event)
   
   if (!user) {
@@ -12,6 +13,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const accountId = getRouterParam(event, 'id')
+  
+  if (!accountId) {
+    throw createError({
+      statusCode: 400,
+      message: 'ID da conta não fornecido'
+    })
+  }
+
   const body = await readBody(event)
 
   const { name, balance } = body
@@ -28,7 +37,7 @@ export default defineEventHandler(async (event) => {
   // Verificar se a conta pertence ao usuário
   const { data: existingAccount, error: checkError } = await supabase
     .from('accounts')
-    .select('id, user_id')
+    .select('id, workspace_id')
     .eq('id', accountId)
     .single()
 
@@ -39,7 +48,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (existingAccount.user_id !== userId) {
+  // Verificar se a conta pertence ao workspace do usuário
+  const { data: workspace } = await supabase
+    .from('workspaces')
+    .select('user_id')
+    .eq('id', existingAccount.workspace_id!)
+    .single()
+
+  if (!workspace || workspace.user_id! !== userId) {
     throw createError({
       statusCode: 403,
       message: 'Sem permissão para editar esta conta'

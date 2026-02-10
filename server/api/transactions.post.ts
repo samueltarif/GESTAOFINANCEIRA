@@ -3,10 +3,16 @@ import type { Database } from '~/types/database.types'
 
 export default defineEventHandler(async (event) => {
     try {
+        console.log('🔍 POST /api/transactions - Iniciando')
+        console.log('🔍 Headers:', event.node.req.headers.cookie ? 'Cookie presente' : 'SEM COOKIE')
+        
         const client = await serverSupabaseClient<Database>(event)
         const user = await serverSupabaseUser(event)
 
+        console.log('🔍 User:', user ? `${user.email} (${user.id})` : 'NULL')
+
         if (!user) {
+            console.error('❌ Usuário não autenticado - sem cookie de sessão')
             throw createError({ statusCode: 401, statusMessage: 'Usuário não autenticado' })
         }
 

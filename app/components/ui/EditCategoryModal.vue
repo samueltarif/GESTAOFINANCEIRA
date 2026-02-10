@@ -58,6 +58,7 @@ const handleSubmit = async () => {
   try {
     await $fetch(`/api/categories/${props.category.id}`, {
       method: 'PUT',
+      credentials: 'include',
       body: {
         name: form.value.name.trim(),
         color: form.value.color,
@@ -86,7 +87,8 @@ const handleDelete = async () => {
 
   try {
     await $fetch(`/api/categories/${props.category.id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      credentials: 'include'
     })
 
     isOpen.value = false

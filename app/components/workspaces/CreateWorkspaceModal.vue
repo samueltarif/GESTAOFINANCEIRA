@@ -44,6 +44,7 @@ const handleSubmit = async () => {
   try {
     await $fetch('/api/workspaces', {
       method: 'POST',
+      credentials: 'include',
       body: {
         name: form.value.name.trim(),
         type: form.value.type,

@@ -35,6 +35,7 @@ const handleSubmit = async () => {
   try {
     const result = await $fetch('/api/categories', {
       method: 'POST',
+      credentials: 'include',
       body: {
         workspace_id: props.workspaceId,
         name: form.value.name.trim(),

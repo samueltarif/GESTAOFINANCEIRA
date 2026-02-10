@@ -59,6 +59,7 @@ const selectedTransaction = ref<{
   account_id: string
 } | null>(null)
 const isDeleting = ref<string | null>(null)
+const toast = useToast()
 
 const handleEdit = (transaction: Transaction) => {
   console.log('🔵 Clicou em editar:', transaction)
@@ -92,13 +93,35 @@ const handleDelete = async (transactionId: string) => {
   isDeleting.value = transactionId
 
   try {
+    console.log('🗑️ Deletando transação:', transactionId)
+    
+    // Verificar sessão
+    const supabase = useSupabaseClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      console.error('❌ Sem sessão ativa')
+      toast.error('Sessão expirada. Por favor, faça login novamente.')
+      setTimeout(() => navigateTo('/login'), 2000)
+      return
+    }
+    
+    console.log('✅ Sessão ativa:', session.user.email)
+    
     await $fetch(`/api/transactions/${transactionId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      credentials: 'include'
     })
+    
+    console.log('✅ Transação deletada com sucesso')
+    
+    // Mostrar toast de sucesso
+    toast.success('Transação excluída com sucesso!')
+    
     emit('refresh')
   } catch (error) {
     console.error('Erro ao excluir transação:', error)
-    alert('Erro ao excluir transação. Tente novamente.')
+    toast.error('Erro ao excluir transação. Tente novamente.')
   } finally {
     isDeleting.value = null
   }
@@ -190,6 +213,14 @@ const handleEditSuccess = () => {
       :workspace-id="workspaceId"
       @update:open="isEditModalOpen = $event"
       @success="handleEditSuccess"
+    />
+    
+    <!-- Toast de Notificação -->
+    <UiToast
+      v-model:show="showToast"
+      :message="toastMessage"
+      :type="toastType"
+      :duration="3000"
     />
   </div>
 </template>

@@ -91,6 +91,7 @@ const showManageAccountsModal = ref(false)
 const showManageCategoriesModal = ref(false)
 const showEditAccountModal = ref(false)
 const showEditCategoryModal = ref(false)
+const showEditWorkspaceModal = ref(false)
 const selectedAccount = ref<any>(null)
 const selectedCategory = ref<any>(null)
 
@@ -208,6 +209,11 @@ async function handleCategorySuccess() {
   await refreshCategories()
   await loadDashboard()
 }
+
+async function handleWorkspaceSuccess() {
+  showEditWorkspaceModal.value = false
+  await loadWorkspace()
+}
 </script>
 
 <template>
@@ -257,6 +263,14 @@ async function handleCategorySuccess() {
               :style="{ backgroundColor: workspace?.color || '#10B981' }"
             ></div>
             <h2 class="text-3xl font-bold text-gray-900">{{ workspace?.name || 'Carregando...' }}</h2>
+            <button
+              v-if="workspace"
+              @click="showEditWorkspaceModal = true"
+              class="ml-2 p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+              title="Editar workspace"
+            >
+              ✏️
+            </button>
           </div>
         </div>
         <div class="flex gap-2 flex-wrap">
@@ -518,6 +532,18 @@ async function handleCategorySuccess() {
         :category="selectedCategory"
         :workspace-id="workspaceId"
         @success="handleCategorySuccess"
+      />
+
+      <UiEditWorkspaceModal
+        v-model:open="showEditWorkspaceModal"
+        :workspace="workspace"
+        @success="handleWorkspaceSuccess"
+      />
+
+      <WorkspacesEditWorkspaceModal
+        v-model:open="showEditWorkspaceModal"
+        :workspace="workspace"
+        @success="handleWorkspaceSuccess"
       />
     </main>
   </div>

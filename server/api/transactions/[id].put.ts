@@ -1,7 +1,8 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import type { Database } from '~/types/database.types'
 
 export default defineEventHandler(async (event) => {
-  const supabase = await serverSupabaseClient(event)
+  const supabase = await serverSupabaseClient<Database>(event)
   const user = await serverSupabaseUser(event)
   
   if (!user) {
@@ -12,6 +13,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const transactionId = getRouterParam(event, 'id')
+  
+  if (!transactionId) {
+    throw createError({
+      statusCode: 400,
+      message: 'ID da transação não fornecido'
+    })
+  }
+
   const body = await readBody(event)
 
   console.log('📝 PUT /api/transactions/[id] - Iniciando')
@@ -45,13 +54,7 @@ export default defineEventHandler(async (event) => {
   console.log('📝 Verificando permissões...')
   const { data: existingTransaction, error: checkError } = await supabase
     .from('transactions')
-    .select(`
-      id,
-      account_id,
-      accounts!inner (
-        user_id
-      )
-    `)
+    .select('id, account_id')
     .eq('id', transactionId)
     .single()
 
@@ -66,12 +69,32 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Verificar se o usuário tem permissão
-  const accountUserId = (existingTransaction.accounts as any)?.user_id
-  console.log('📝 Account user_id:', accountUserId)
+  // Verificar se a conta pertence ao usuário
+  const { data: account } = await supabase
+    .from('accounts')
+    .select('workspace_id')
+    .eq('id', existingTransaction.account_id!)
+    .single()
+
+  if (!account) {
+    console.log('❌ Conta não encontrada')
+    throw createError({
+      statusCode: 404,
+      message: 'Conta não encontrada'
+    })
+  }
+
+  // Verificar se o workspace pertence ao usuário
+  const { data: workspace } = await supabase
+    .from('workspaces')
+    .select('user_id')
+    .eq('id', account.workspace_id!)
+    .single()
+
+  console.log('📝 Workspace user_id:', workspace?.user_id)
   
-  if (accountUserId !== userId) {
-    console.log('❌ Sem permissão - User ID:', userId, 'Account User ID:', accountUserId)
+  if (!workspace || workspace.user_id! !== userId) {
+    console.log('❌ Sem permissão - User ID:', userId, 'Workspace User ID:', workspace?.user_id)
     throw createError({
       statusCode: 403,
       message: 'Sem permissão para editar esta transação'

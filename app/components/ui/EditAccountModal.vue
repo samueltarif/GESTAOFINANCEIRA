@@ -54,6 +54,7 @@ const handleSubmit = async () => {
   try {
     await $fetch(`/api/accounts/${props.account.id}`, {
       method: 'PUT',
+      credentials: 'include',
       body: {
         name: form.value.name.trim(),
         balance: form.value.balance
@@ -81,7 +82,8 @@ const handleDelete = async () => {
 
   try {
     await $fetch(`/api/accounts/${props.account.id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      credentials: 'include'
     })
 
     isOpen.value = false

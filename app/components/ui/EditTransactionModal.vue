@@ -117,6 +117,7 @@ const handleSubmit = async () => {
     
     const result = await $fetch(`/api/transactions/${props.transaction.id}`, {
       method: 'PUT',
+      credentials: 'include',
       body
     })
     

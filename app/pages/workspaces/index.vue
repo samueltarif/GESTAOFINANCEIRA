@@ -42,6 +42,8 @@ const showDeleteConfirm = ref(false)
 const deleteMode = ref<'single' | 'multiple' | 'all'>('single')
 const workspaceToDelete = ref<string | null>(null)
 const isDeleting = ref(false)
+const showEditWorkspaceModal = ref(false)
+const workspaceToEdit = ref<WorkspacePreview | null>(null)
 
 function toggleWorkspaceSelection(id: string) {
   if (selectedWorkspaces.value.has(id)) {
@@ -82,10 +84,14 @@ async function executeDelete() {
   isDeleting.value = true
   try {
     if (deleteMode.value === 'single' && workspaceToDelete.value) {
-      await $fetch(`/api/workspaces/${workspaceToDelete.value}`, { method: 'DELETE' })
+      await $fetch(`/api/workspaces/${workspaceToDelete.value}`, { 
+        method: 'DELETE',
+        credentials: 'include'
+      })
     } else if (deleteMode.value === 'multiple') {
       await $fetch('/api/workspaces/delete-multiple', {
         method: 'POST',
+        credentials: 'include',
         body: { workspaceIds: Array.from(selectedWorkspaces.value) }
       })
       selectedWorkspaces.value.clear()
@@ -93,6 +99,7 @@ async function executeDelete() {
       const allIds = workspaces.value.map(w => w.id)
       await $fetch('/api/workspaces/delete-multiple', {
         method: 'POST',
+        credentials: 'include',
         body: { workspaceIds: allIds }
       })
       selectedWorkspaces.value.clear()
@@ -112,6 +119,17 @@ async function executeDelete() {
 function cancelDelete() {
   showDeleteConfirm.value = false
   workspaceToDelete.value = null
+}
+
+function openEditModal(workspace: WorkspacePreview) {
+  workspaceToEdit.value = workspace
+  showEditWorkspaceModal.value = true
+}
+
+async function handleWorkspaceEditSuccess() {
+  showEditWorkspaceModal.value = false
+  workspaceToEdit.value = null
+  await refresh()
 }
 
 function formatCurrency(value: number) {
@@ -244,6 +262,15 @@ const getDeleteMessage = computed(() => {
             />
           </div>
 
+          <!-- Botão de Edição -->
+          <button
+            @click.stop="openEditModal(workspace)"
+            class="absolute top-4 right-14 z-10 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Editar workspace"
+          >
+            <Icon name="lucide:edit" class="h-5 w-5" />
+          </button>
+
           <!-- Botão de Exclusão Individual -->
           <button
             @click.stop="confirmDeleteSingle(workspace.id)"
@@ -347,6 +374,13 @@ const getDeleteMessage = computed(() => {
       :open="isModalOpen" 
       @update:open="isModalOpen = $event"
       @success="refresh"
+    />
+
+    <!-- Modal de Edição -->
+    <WorkspacesEditWorkspaceModal
+      v-model:open="showEditWorkspaceModal"
+      :workspace="workspaceToEdit"
+      @success="handleWorkspaceEditSuccess"
     />
 
     <!-- Modal de Confirmação de Exclusão -->

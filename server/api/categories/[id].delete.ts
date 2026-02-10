@@ -1,7 +1,8 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import type { Database } from '~/types/database.types'
 
 export default defineEventHandler(async (event) => {
-  const supabase = await serverSupabaseClient(event)
+  const supabase = await serverSupabaseClient<Database>(event)
   const user = await serverSupabaseUser(event)
   
   if (!user) {
@@ -12,12 +13,20 @@ export default defineEventHandler(async (event) => {
   }
 
   const categoryId = getRouterParam(event, 'id')
+  
+  if (!categoryId) {
+    throw createError({
+      statusCode: 400,
+      message: 'ID da categoria não fornecido'
+    })
+  }
+
   const userId = user.id || user.sub
 
   // Verificar se a categoria pertence ao usuário
   const { data: existingCategory, error: checkError } = await supabase
     .from('categories')
-    .select('id, workspace_id, workspaces!inner(user_id)')
+    .select('id, workspace_id')
     .eq('id', categoryId)
     .single()
 
@@ -28,7 +37,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if ((existingCategory.workspaces as any)?.user_id !== userId) {
+  // Verificar se a categoria pertence ao workspace do usuário
+  const { data: workspace } = await supabase
+    .from('workspaces')
+    .select('user_id')
+    .eq('id', existingCategory.workspace_id!)
+    .single()
+
+  if (!workspace || workspace.user_id! !== userId) {
     throw createError({
       statusCode: 403,
       message: 'Sem permissão para deletar esta categoria'
