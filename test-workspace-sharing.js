@@ -1,5 +1,5 @@
 // Teste de compartilhamento de workspaces
-const BASE_URL = 'http://localhost:3002'
+const BASE_URL = 'http://localhost:3000'
 
 async function testarCompartilhamento() {
   console.log('🧪 Testando funcionalidade de compartilhamento de workspaces...\n')
