@@ -130,9 +130,33 @@ function formatCurrency(value: number) {
     <!-- Header -->
     <header class="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
       <div class="max-w-7xl mx-auto flex h-16 items-center justify-between px-4">
-        <div class="flex items-center gap-2">
-          <span class="text-2xl">💰</span>
-          <h1 class="text-xl font-bold text-gray-900">Controle Financeiro</h1>
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">💰</span>
+            <h1 class="text-xl font-bold text-gray-900">Controle Financeiro</h1>
+          </div>
+          
+          <!-- Navegação -->
+          <nav class="hidden md:flex items-center gap-4">
+            <NuxtLink 
+              to="/dashboard" 
+              class="text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+            >
+              Dashboard
+            </NuxtLink>
+            <NuxtLink 
+              to="/workspaces" 
+              class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Workspaces
+            </NuxtLink>
+            <NuxtLink 
+              to="/transactions" 
+              class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Transações
+            </NuxtLink>
+          </nav>
         </div>
         
         <div class="flex items-center gap-4">
