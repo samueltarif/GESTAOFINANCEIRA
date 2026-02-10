@@ -50,6 +50,12 @@ async function handleLogout() {
           >
             Workspaces
           </NuxtLink>
+          <NuxtLink 
+            to="/transactions" 
+            class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Transações
+          </NuxtLink>
         </nav>
 
         <!-- User Menu -->
