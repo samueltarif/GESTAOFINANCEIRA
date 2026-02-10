@@ -184,6 +184,57 @@ const barChartData = computed(() => {
   }
 })
 
+const lineChartData = computed(() => {
+  if (!dashboard.value?.monthlyEvolution) return { labels: [], datasets: [] }
+  
+  return {
+    labels: dashboard.value.monthlyEvolution.labels || [],
+    datasets: [
+      {
+        label: 'Receitas',
+        data: dashboard.value.monthlyEvolution.revenues || [],
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        tension: 0.4,
+        fill: true
+      },
+      {
+        label: 'Despesas',
+        data: dashboard.value.monthlyEvolution.expenses || [],
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        tension: 0.4,
+        fill: true
+      }
+    ]
+  }
+})
+
+const trendChartData = computed(() => {
+  if (!dashboard.value?.monthlyEvolution) return { labels: [], datasets: [] }
+  
+  const labels = dashboard.value.monthlyEvolution.labels || []
+  const revenues = dashboard.value.monthlyEvolution.revenues || []
+  const expenses = dashboard.value.monthlyEvolution.expenses || []
+  
+  // Calcular lucro mensal
+  const profit = revenues.map((rev, i) => rev - (expenses[i] || 0))
+  
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Lucro Mensal',
+        data: profit,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        fill: true
+      }
+    ]
+  }
+})
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 }
@@ -388,6 +439,41 @@ async function handleWorkspaceSuccess() {
                 <div v-for="i in 6" :key="i" class="h-10 bg-gray-200 rounded animate-pulse"></div>
               </div>
               <ChartsBarChart v-else :data="barChartData" />
+            </div>
+          </div>
+        </div>
+
+        <!-- New Charts: Timeline and Trends -->
+        <div class="grid gap-6 lg:grid-cols-2">
+          <!-- Line Chart - Timeline -->
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Linha do Tempo</h3>
+              <p class="text-sm text-gray-600">Evolução detalhada das finanças</p>
+            </div>
+            <div class="h-[300px]">
+              <div v-if="dashboardLoading" class="space-y-2">
+                <div v-for="i in 6" :key="i" class="h-10 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              <ClientOnly>
+                <ChartsLineChart v-if="!dashboardLoading" :data="lineChartData" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Trend Chart -->
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Análise de Tendências</h3>
+              <p class="text-sm text-gray-600">Projeção baseada em dados históricos</p>
+            </div>
+            <div class="h-[300px]">
+              <div v-if="dashboardLoading" class="space-y-2">
+                <div v-for="i in 6" :key="i" class="h-10 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              <ClientOnly>
+                <ChartsTrendChart v-if="!dashboardLoading" :data="trendChartData" :show-trend="true" />
+              </ClientOnly>
             </div>
           </div>
         </div>

@@ -50,11 +50,11 @@ export default defineEventHandler(async (event) => {
 
   console.log('📝 User ID:', userId)
 
-  // Verificar se a transação pertence ao usuário
+  // Verificar se a transação pertence ao usuário através da categoria
   console.log('📝 Verificando permissões...')
   const { data: existingTransaction, error: checkError } = await supabase
     .from('transactions')
-    .select('id, account_id')
+    .select('id, category_id')
     .eq('id', transactionId)
     .single()
 
@@ -69,18 +69,20 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Verificar se a conta pertence ao usuário
-  const { data: account } = await supabase
-    .from('accounts')
+  // Verificar se a categoria pertence a um workspace do usuário
+  const { data: category } = await supabase
+    .from('categories')
     .select('workspace_id')
-    .eq('id', existingTransaction.account_id!)
+    .eq('id', existingTransaction.category_id)
     .single()
 
-  if (!account) {
-    console.log('❌ Conta não encontrada')
+  console.log('📝 Categoria:', JSON.stringify(category, null, 2))
+
+  if (!category) {
+    console.log('❌ Categoria não encontrada')
     throw createError({
       statusCode: 404,
-      message: 'Conta não encontrada'
+      message: 'Categoria não encontrada'
     })
   }
 
@@ -88,12 +90,13 @@ export default defineEventHandler(async (event) => {
   const { data: workspace } = await supabase
     .from('workspaces')
     .select('user_id')
-    .eq('id', account.workspace_id!)
+    .eq('id', category.workspace_id)
     .single()
 
+  console.log('📝 Workspace:', JSON.stringify(workspace, null, 2))
   console.log('📝 Workspace user_id:', workspace?.user_id)
   
-  if (!workspace || workspace.user_id! !== userId) {
+  if (!workspace || workspace.user_id !== userId) {
     console.log('❌ Sem permissão - User ID:', userId, 'Workspace User ID:', workspace?.user_id)
     throw createError({
       statusCode: 403,

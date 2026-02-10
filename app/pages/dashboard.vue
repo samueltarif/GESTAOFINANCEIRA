@@ -75,6 +75,51 @@ const barChartData = computed(() => ({
   ]
 }))
 
+const lineChartData = computed(() => ({
+  labels: dashboardData.value?.monthlyEvolution.labels || [],
+  datasets: [
+    {
+      label: 'Receitas',
+      data: dashboardData.value?.monthlyEvolution.revenues || [],
+      borderColor: '#22c55e',
+      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+      tension: 0.4,
+      fill: true
+    },
+    {
+      label: 'Despesas',
+      data: dashboardData.value?.monthlyEvolution.expenses || [],
+      borderColor: '#ef4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      tension: 0.4,
+      fill: true
+    }
+  ]
+}))
+
+const trendChartData = computed(() => {
+  const labels = dashboardData.value?.monthlyEvolution.labels || []
+  const revenues = dashboardData.value?.monthlyEvolution.revenues || []
+  const expenses = dashboardData.value?.monthlyEvolution.expenses || []
+  
+  // Calcular lucro mensal
+  const profit = revenues.map((rev, i) => rev - (expenses[i] || 0))
+  
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Lucro Mensal',
+        data: profit,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        fill: true
+      }
+    ]
+  }
+})
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 }
@@ -221,6 +266,64 @@ function formatCurrency(value: number) {
             <div class="h-[300px]">
               <ClientOnly>
                 <ChartsBarChart :data="barChartData" />
+              </ClientOnly>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Charts: Timeline and Trends -->
+        <div class="grid gap-6 lg:grid-cols-2">
+          <!-- Line Chart - Timeline -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Linha do Tempo</h3>
+              <p class="text-sm text-gray-600">Evolução detalhada das suas finanças</p>
+            </div>
+            <div class="h-[300px]">
+              <ClientOnly>
+                <ChartsLineChart :data="lineChartData" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Trend Chart -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Análise de Tendências</h3>
+              <p class="text-sm text-gray-600">Projeção baseada em dados históricos</p>
+            </div>
+            <div class="h-[300px]">
+              <ClientOnly>
+                <ChartsTrendChart :data="trendChartData" :show-trend="true" />
+              </ClientOnly>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Charts: Timeline and Trends -->
+        <div class="grid gap-6 lg:grid-cols-2">
+          <!-- Line Chart - Timeline -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Linha do Tempo</h3>
+              <p class="text-sm text-gray-600">Evolução detalhada das finanças</p>
+            </div>
+            <div class="h-[300px]">
+              <ClientOnly>
+                <ChartsLineChart :data="barChartData" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Trend Chart -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Análise de Tendências</h3>
+              <p class="text-sm text-gray-600">Projeção baseada em dados históricos</p>
+            </div>
+            <div class="h-[300px]">
+              <ClientOnly>
+                <ChartsTrendChart :data="barChartData" :show-trend-line="true" />
               </ClientOnly>
             </div>
           </div>
